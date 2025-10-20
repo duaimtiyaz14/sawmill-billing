@@ -2,8 +2,8 @@
   "name": "Sawmill Billing",
   "short_name": "Sawmill",
   "description": "Timber billing with Hoppus, drafts, charges, PDF & PWA",
-  "start_url": "sawmill_v6.html",
-  "scope": "./",
+  "start_url": "index.html",
+  "scope": "/<sawmill-billing>/",
   "display": "standalone",
   "theme_color": "#0c6efd",
   "background_color": "#ffffff",
@@ -26,4 +26,5 @@
       "description": "Open draft manager"
     }
   ]
+
 }
