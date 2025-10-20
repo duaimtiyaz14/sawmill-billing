@@ -1,10 +1,10 @@
 /* Simple service worker for offline + Add to Home Screen */
-const CACHE_VERSION = 'v6-1';
+const CACHE_VERSION = 'v6-2';
 const STATIC_CACHE = `sawmill-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sawmill-runtime-${CACHE_VERSION}`;
 
 const APP_SHELL = [
-  './sawmill_v6.html',
+  './index.html',
   './manifest.json',
   './sw.js',
   // Icons (create these files under /icons/)
@@ -99,4 +99,5 @@ self.addEventListener('fetch', (event) => {
       return res;
     }).catch(() => caches.match(req))
   );
+
 });
