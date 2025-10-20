@@ -1,0 +1,1853 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sawmill Billing — Hoppus + Rectangle | Drafts | PDF | PWA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0c6efd" />
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root { --brand:#0c6efd; --muted:#6c757d; --bg:#f7f7fb; --border:#e2e2ea; --ink:#222; --green:#2e7d32; --red:#c62828; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:var(--bg); color:var(--ink); }
+    .container { max-width: 1240px; margin: 24px auto; padding: 0 16px; }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    h2 { font-size: 18px; margin: 16px 0 10px; }
+    h3 { font-size: 14px; margin: 10px 0 6px; }
+    .card { background:#fff; border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:16px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
+    label { font-size: 12px; color:#555; margin-bottom:4px; display:block; }
+    input, select, textarea { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:14px; outline:none; background:#fff; }
+    input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(12,110,253,0.08); }
+    .row { display:flex; gap:12px; flex-wrap: wrap; align-items: flex-start; }
+    .col { flex:1 1 220px; min-width: 180px; }
+    .btn { appearance:none; border:1px solid var(--brand); background:var(--brand); color:#fff; padding:8px 12px; border-radius:8px; font-weight:600; cursor:pointer; }
+    .btn.secondary { background:#fff; color:var(--brand); }
+    .btn.gray { background:#f1f3f5; color:#111; border-color:#e9ecef; }
+    .btn.red { background: var(--red); border-color: var(--red); }
+    .btn.link { background: transparent; border: none; color: var(--brand); padding: 4px 6px; cursor:pointer; }
+    .btn.small { padding:6px 8px; font-size:12px; }
+    .btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #ddd; background:#f8f9fa; }
+    .badge.pin { background:#fff3cd; border-color:#ffe08a; }
+    .badge.final { background:#e6f4ea; border-color:#b7dfc3; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom:1px solid var(--border); padding:8px; text-align:left; font-size:14px; vertical-align: top; }
+    tfoot td { font-weight:700; }
+    .muted { color: var(--muted); }
+    .right { text-align:right; }
+    .small { font-size:12px; }
+    .dim { color:#8e8e8e; }
+    .note { font-size:12px; color:#555; }
+    .invoice { background:#fff; border:1px solid var(--border); border-radius:10px; padding:16px; margin-top:12px; }
+    .invoice-header { display:flex; justify-content: space-between; gap:8px; flex-wrap: wrap; }
+    .invoice-title { font-weight:800; font-size:20px; }
+    .hr { height:1px; background:var(--border); margin:10px 0; }
+    .grid-3 { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:12px; }
+    .grid-2 { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
+    .switch { display:flex; align-items:center; gap:8px; }
+    .mt4 { margin-top:4px; } .mt6 { margin-top:6px; } .mt8 { margin-top:8px; } .mt12 { margin-top:12px; } .mt16 { margin-top:16px; }
+    .mb8 { margin-bottom:8px; } .mr6 { margin-right:6px; } .mr8 { margin-right:8px; }
+    @media (max-width: 760px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+    /* Modal */
+    .modal { position: fixed; inset:0; display:none; align-items: center; justify-content: center; background: rgba(0,0,0,0.35); padding:16px; z-index:9999; }
+    .modal.show { display:flex; }
+    .modal .box { background:#fff; border-radius:12px; width:100%; max-width: 900px; padding:16px; border:1px solid var(--border); }
+    .modal .box h2 { margin:0 0 10px; }
+    .modal .box .list { max-height: 60vh; overflow:auto; border:1px solid var(--border); border-radius:8px; }
+
+    /* Print: only invoice area */
+    @media print {
+      body * { visibility: hidden !important; }
+      #invoiceArea, #invoiceArea * { visibility: visible !important; }
+      #invoiceArea { position: absolute; left:0; top:0; width:100%; border:0; box-shadow:none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🪵 Sawmill Billing — Round (Hoppus) + Rectangle | Drafts | PDF | PWA</h1>
+
+    <!-- Mill Profile -->
+    <div class="card">
+      <div class="row">
+        <div class="col"><label>Mill Name</label><input id="millName" placeholder="Your Mill Name"></div>
+        <div class="col"><label>Address</label><input id="millAddress" placeholder="Full Address"></div>
+        <div class="col"><label>Mobile</label><input id="millMobile" placeholder="+91-XXXXXXXXXX"></div>
+      </div>
+      <div class="mt8 row">
+        <div class="col"><button class="btn gray" id="saveProfile">Save Profile</button></div>
+        <div class="col"><button class="btn gray" id="loadProfile">Load Profile</button></div>
+        <div class="col"><button class="btn gray" id="clearProfile">Clear Profile</button></div>
+      </div>
+    </div>
+
+    <!-- Draft Controls -->
+    <div class="card">
+      <h2>Drafts & Invoice Number</h2>
+      <div class="row">
+        <div class="col">
+          <button class="btn" id="newDraft">+ New Draft (reserve no.)</button>
+          <button class="btn gray" id="openDrafts">Draft Manager</button>
+        </div>
+        <div class="col">
+          <div class="small dim">Current Draft</div>
+          <div><span class="badge" id="currentDraftId">—</span>
+               <span class="badge" id="currentDraftStatus">No draft</span>
+               <span class="badge pin" id="currentDraftPinned" style="display:none;">Pinned</span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="small dim">Invoice No. (reserved at draft create)</div>
+          <input id="invNumber" placeholder="auto e.g., 01-20251020">
+        </div>
+        <div class="col">
+          <label>Date</label>
+          <input id="invDate" type="date">
+        </div>
+        <div class="col">
+          <label>Customer Name</label>
+          <input id="customerName" placeholder="Customer Name">
+        </div>
+      </div>
+    </div>
+
+    <!-- Rates Master -->
+    <div class="card">
+      <h2>Rates Master (₹/ft)</h2>
+      <div class="small dim mb8">Set default rates for species (Hindi). Auto-fill on Add Item; you can override per item.</div>
+      <table id="speciesTable">
+        <thead>
+          <tr>
+            <th>Species (Hindi + English)</th>
+            <th class="right">Rate (₹/ft)</th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="speciesBody"></tbody>
+        <tfoot>
+          <tr>
+            <td><input id="newSpeciesName" placeholder="नई प्रजाति (Hindi) (English)"></td>
+            <td class="right"><input id="newSpeciesRate" type="number" step="0.01" placeholder="0.00"></td>
+            <td class="right"><button class="btn" id="addSpecies">Add Species</button></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="mt8">
+        <button class="btn gray mr8" id="saveSpecies">Save Rates</button>
+        <button class="btn gray" id="resetSpecies">Reset Defaults</button>
+      </div>
+    </div>
+
+    <!-- Add Item (Quick Capture) -->
+    <div class="card">
+      <h2>Add Item</h2>
+      <div class="row">
+        - <div class="col">
+          <label>Type</label>
+          <select id="itemType">
+            <option value="round">Round (Gola)</option>
+            <option value="rect">Rectangle (Section)</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>Species</label>
+          <select id="speciesSelect"></select>
+        </div>
+        <div class="col">
+          <label>Rate (₹/ft)</label>
+          <div class="row" style="gap:6px; align-items:center;">
+            <div class="col" style="min-width:140px;"><input id="rate" type="number" step="0.01" placeholder="e.g., 90"></div>
+            <div class="col" style="flex:0 0 auto;"><button class="btn gray" id="fillRate">Use Master</button></div>
+          </div>
+        </div>
+        <div class="col">
+          <label>Qty</label>
+          <input id="qty" type="number" min="1" step="1" value="1">
+        </div>
+        <div class="col">
+          <label>Copies (same size)</label>
+          <input id="copies" type="number" min="1" step="1" value="1">
+        </div>
+      </div>
+
+      <!-- Round fields: Length row + Girth row -->
+      <div id="roundFields" class="mt8">
+        <div>
+          <label class="small dim">Length</label>
+          <div class="row">
+            <div class="col"><input id="r_len_ft" type="number" min="0" step="1" placeholder="Feet"></div>
+            <div class="col"><input id="r_len_in" type="number" min="0" step="1" placeholder="Inch"></div>
+            <div class="col"><input id="r_len_pin" type="number" min="0" max="11" step="1" placeholder="Pin (0–11)"></div>
+          </div>
+        </div>
+        <div class="mt8">
+          <label class="small dim">Girth (Circumference)</label>
+          <div class="row">
+            <div class="col"><input id="r_girth_in" type="number" min="0" step="0.01" placeholder="Inch"></div>
+            <div class="col"><input id="r_girth_pin" type="number" min="0" max="11" step="1" placeholder="Pin (0–11)"></div>
+          </div>
+        </div>
+        <div class="small dim mt8">Round (Hoppus): Foot = (Girth(in)^2 × Length(ft)) / 2304</div>
+      </div>
+
+      <!-- Rect fields: Length row + Width/Thickness row -->
+      <div id="rectFields" class="mt8" style="display:none;">
+        <div>
+          <label class="small dim">Length</label>
+          <div class="row">
+            <div class="col"><input id="t_len_ft" type="number" min="0" step="1" placeholder="Feet"></div>
+            <div class="col"><input id="t_len_in" type="number" min="0" step="1" placeholder="Inch"></div>
+            <div class="col"><input id="t_len_pin" type="number" min="0" max="11" step="1" placeholder="Pin (0–11)"></div>
+          </div>
+        </div>
+        <div class="mt8">
+          <label class="small dim">Section</label>
+          <div class="row">
+            <div class="col"><input id="t_w_in" type="number" min="0" step="0.01" placeholder="Width (inch)"></div>
+            <div class="col"><input id="t_w_pin" type="number" min="0" max="11" step="1" placeholder="Width Pin (0–11)"></div>
+            <div class="col"><input id="t_th_in" type="number" min="0" step="0.01" placeholder="Thickness (inch)"></div>
+            <div class="col"><input id="t_th_pin" type="number" min="0" max="11" step="1" placeholder="Thickness Pin (0–11)"></div>
+          </div>
+        </div>
+        <div class="small dim mt8">Rectangle: Foot = Length(ft) × (Width(in)/12) × (Thickness(in)/12)</div>
+      </div>
+
+      <div class="mt16" style="display:flex; gap:8px; align-items:center; flex-wrap: wrap;">
+        <button class="btn" id="addItem">+ Add Item</button>
+        <button class="btn gray" id="addItemKeep" type="button">Add & Next</button>
+        <button class="btn gray" id="clearItemForm" type="button">Clear Form</button>
+        <label class="switch"><input type="checkbox" id="captureMode"> Quick Capture (allow 0 rate/species)</label>
+      </div>
+    </div>
+
+    <!-- Bulk Apply (Species / Rate / Master) -->
+    <div class="card">
+      <h2>Bulk Apply</h2>
+      <div class="row">
+        <div class="col">
+          <h3 class="small dim">Species</h3>
+          <div class="mt4"><select id="bulkSpecies"></select></div>
+          <div class="mt8 row">
+            <div class="col">
+              <label class="small dim">Filter</label>
+              <select id="bulkSpeciesFilter">
+                <option value="all">All Items</option>
+                <option value="round">Round Only</option>
+                <option value="rect">Rectangle Only</option>
+              </select>
+            </div>
+            <div class="col">
+              <label class="small dim">Options</label>
+              <div class="switch"><input type="checkbox" id="bulkSpeciesOnlyEmpty"> Only where species empty</div>
+            </div>
+          </div>
+          <div class="mt8"><button class="btn" id="applyBulkSpecies">Apply Species</button></div>
+        </div>
+
+        <div class="col">
+          <h3 class="small dim">Rate</h3>
+          <div class="mt4"><input id="bulkRate" type="number" step="0.01" placeholder="₹ Rate to apply"></div>
+          <div class="mt8 row">
+            <div class="col">
+              <label class="small dim">Filter</label>
+              <select id="bulkRateFilter">
+                <option value="all">All Items</option>
+                <option value="round">Round Only</option>
+                <option value="rect">Rectangle Only</option>
+              </select>
+            </div>
+            <div class="col">
+              <label class="small dim">Options</label>
+              <div class="switch"><input type="checkbox" id="bulkRateOnlyZero"> Only where rate is 0</div>
+            </div>
+          </div>
+          <div class="mt8"><button class="btn" id="applyBulkRate">Apply Rate</button></div>
+        </div>
+
+        <div class="col">
+          <h3 class="small dim">Master Rates</h3>
+          <div class="small dim">Apply species master rate to all items (by species).</div>
+          <div class="mt8"><button class="btn gray" id="applyMasterAll">Apply Master Rate to All</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoice Area (Preview + Editor + Charges) -->
+    <div class="invoice" id="invoiceArea">
+      <div class="invoice-header">
+        <div>
+          <div class="invoice-title" id="hMillName">Mill Name</div>
+          <div class="small" id="hMillAddress">Address</div>
+          <div class="small" id="hMillMobile">Mobile</div>
+        </div>
+        <div>
+          <div><strong>Invoice:</strong> <span id="hInvNumber">—</span></div>
+          <div><strong>Date:</strong> <span id="hInvDate"></span></div>
+          <div><strong>Customer:</strong> <span id="hCustomerName">Customer</span></div>
+        </div>
+      </div>
+      <div class="hr"></div>
+
+      <div class="row">
+        <div class="col">
+          <button class="btn gray" id="toggleEdit">Toggle Edit Mode</button>
+          <span class="small dim">Edit rows inline, then switch back to Preview before PDF/Print.</span>
+        </div>
+      </div>
+
+      <!-- Read-only Preview -->
+      <div id="invoicePreview" class="mt12">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Species</th>
+              <th>Size</th>
+              <th class="right">Qty</th>
+              <th class="right">Rate (₹/ft)</th>
+              <th class="right">Foot</th>
+              <th class="right">Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody id="previewBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="6" class="right" id="previewItemsCount">Items (0):</td>
+              <td class="right" id="previewTotalFoot">0 ft 0 in 0 pin</td>
+              <td class="right" id="previewTotalAmount">0.00</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Charges + Grand total -->
+        <div class="mt12">
+          <h3 class="small">Charges</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Charge</th>
+                <th class="right">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody id="chargesPreviewBody"></tbody>
+            <tfoot>
+              <tr>
+                <td class="right">Charges Total</td>
+                <td class="right" id="chargesTotalCell">0.00</td>
+              </tr>
+              <tr>
+                <td class="right">Grand Total</td>
+                <td class="right" id="grandTotalCell">0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Editable Table -->
+      <div id="invoiceEditor" class="mt12" style="display:none;">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Type</th>
+              <th>Species</th>
+              <th>Size (editable)</th>
+              <th class="right">Qty</th>
+              <th class="right">Rate</th>
+              <th class="right">Foot</th>
+              <th class="right">Amount</th>
+              <th class="right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="editorBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="6" class="right" id="editorItemsCount">Items (0):</td>
+              <td class="right" id="editorTotalFoot">0 ft 0 in 0 pin</td>
+              <td class="right" id="editorTotalAmount">0.00</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Charges Editor -->
+    <div class="card">
+      <h2>Add Charges</h2>
+      <div class="row">
+        <div class="col">
+          <label>Labour (₹)</label>
+          <input id="labourAmount" type="number" step="0.01" placeholder="0.00">
+        </div>
+        <div class="col">
+          <label>Nails — Count</label>
+          <input id="nailCount" type="number" step="1" min="0" placeholder="0">
+        </div>
+        <div class="col">
+          <label>Nails — Rate per nail (₹)</label>
+          <input id="nailRate" type="number" step="0.01" placeholder="100">
+        </div>
+      </div>
+
+      <div class="mt12">
+        <h3 class="small">Custom Charges</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th class="right">Amount (₹)</th>
+              <th class="right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="customChargesBody"></tbody>
+          <tfoot>
+            <tr>
+              <td><input id="newChargeLabel" placeholder="Extra charge (e.g., Saw damage)"></td>
+              <td class="right"><input id="newChargeAmount" type="number" step="0.01" placeholder="0.00"></td>
+              <td class="right"><button class="btn" id="addCharge">Add Charge</button></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Email-to-self (optional) -->
+    <div class="card">
+      <h2>Email to Self (on Finalize) — Optional</h2>
+      <div class="small dim">Uses EmailJS (free). Fill once, app will send invoice PDF to your Gmail automatically.</div>
+      <div class="row mt8">
+        <div class="col"><label>Your Email (receiver)</label><input id="emailTo" placeholder="you@gmail.com"></div>
+        <div class="col"><label>EmailJS Service ID</label><input id="emailjsService" placeholder="service_xxx"></div>
+        <div class="col"><label>EmailJS Template ID</label><input id="emailjsTemplate" placeholder="template_xxx"></div>
+        <div class="col"><label>EmailJS Public Key</label><input id="emailjsPubKey" placeholder="public_xxx"></div>
+      </div>
+      <div class="mt8 row">
+        <div class="col"><label class="switch"><input type="checkbox" id="emailEnable"> Enable email on Finalize</label></div>
+        <div class="col"><button class="btn gray" id="saveEmailCfg">Save Email Settings</button></div>
+      </div>
+      <div class="small dim">Note: If you don’t want email, keep this blank. PDF will still download to your device.</div>
+    </div>
+
+    <!-- Actions -->
+    <div class="card">
+      <div class="row" style="align-items:center;">
+        <div class="col">
+          <button class="btn" id="finalizeInvoice">Finalize + PDF + Email</button>
+        </div>
+        <div class="col">
+          <button class="btn gray" id="genPDF">Generate PDF</button>
+          <button class="btn gray" id="printPDF" type="button">Print / Save as PDF</button>
+        </div>
+        <div class="col">
+          <button class="btn gray" id="duplicateDraft">Duplicate Draft</button>
+          <button class="btn gray" id="pinToggle">Pin/Unpin Draft</button>
+          <button class="btn red" id="deleteDraft">Delete Draft</button>
+        </div>
+      </div>
+      <div class="small dim mt8" id="pdfStatus"></div>
+    </div>
+  </div>
+
+  <!-- Draft Manager Modal -->
+  <div class="modal" id="draftModal">
+    <div class="box">
+      <h2>Draft Manager</h2>
+      <div class="row">
+        <div class="col"><input id="searchCustomer" placeholder="Search customer"></div>
+        <div class="col"><input id="searchDateFrom" type="date"></div>
+        <div class="col"><input id="searchDateTo" type="date"></div>
+        <div class="col"><button class="btn gray" id="applyDraftFilter">Filter</button></div>
+        <div class="col"><button class="btn gray" id="closeDrafts">Close</button></div>
+      </div>
+      <div class="list mt8">
+        <table>
+          <thead>
+            <tr>
+              <th>Draft ID</th>
+              <th>Invoice No.</th>
+              <th>Customer</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Pinned</th>
+              <th class="right">Items</th>
+              <th class="right">Total (₹)</th>
+              <th class="right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="draftListBody"></tbody>
+        </table>
+      </div>
+      <div class="small dim mt8">Note: Unpinned drafts older than 7 days auto-delete on app open.</div>
+    </div>
+  </div>
+
+  <!-- PDF library (vector PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+  <script>
+    // ===== Helpers =====
+    const clamp01 = v => Math.max(0, v || 0);
+    const toNum = v => parseFloat(v || '0') || 0;
+
+    function feetFromFIP(ft, inch, pin) { ft=clamp01(ft); inch=clamp01(inch); pin=clamp01(pin); return ft + (inch + pin/12)/12; }
+    function inchesFromIP(inch, pin) { inch=clamp01(inch); pin=clamp01(pin); return inch + pin/12; }
+    function fipFromFeet(feet) {
+      feet = feet || 0;
+      let ft = Math.floor(feet + 1e-9);
+      let remFeet = feet - ft;
+      let inchesTotal = remFeet * 12;
+      let inch = Math.floor(inchesTotal + 1e-9);
+      let pin = Math.round((inchesTotal - inch) * 12);
+      if (pin >= 12) { pin -= 12; inch += 1; }
+      if (inch >= 12) { inch -= 12; ft += 1; }
+      return { ft, inch, pin };
+    }
+    function fmtFIP(feet) { const f = fipFromFeet(feet); return `${f.ft} ft ${f.inch} in ${f.pin} pin`; }
+    function fmtMoney(x) { return (x || 0).toFixed(2); }
+    function hoppusFoot(G_in, L_ft) { return (G_in*G_in*L_ft)/2304; }
+    function rectFoot(L_ft, W_in, T_in) { return L_ft*(W_in/12)*(T_in/12); }
+
+    // Date helpers
+    const pad2 = n => String(n).padStart(2, '0');
+    const ymd = (d) => {
+      const yy = d.getFullYear();
+      const mm = pad2(d.getMonth()+1);
+      const dd = pad2(d.getDate());
+      return `${yy}${mm}${dd}`;
+    };
+    const ymdDash = (yyyymmdd) => `${yyyymmdd.slice(0,4)}-${yyyymmdd.slice(4,6)}-${yyyymmdd.slice(6,8)}`;
+    const noDash = (yyyy_mm_dd) => (yyyy_mm_dd || '').replaceAll('-', '');
+    const todayStr = () => ymd(new Date());
+    const daysBetween = (aYmd, bYmd) => {
+      const a = new Date(`${aYmd.slice(0,4)}-${aYmd.slice(4,6)}-${aYmd.slice(6,8)}T00:00:00`);
+      const b = new Date(`${bYmd.slice(0,4)}-${bYmd.slice(4,6)}-${bYmd.slice(6,8)}T00:00:00`);
+      return Math.round((b - a) / 86400000);
+    };
+
+    // Random ID
+    const makeId = () => `d-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+
+    // ===== Default species (Hindi + English) =====
+    const DEFAULT_SPECIES = [
+      { name: 'सागवान (Teak)', rate: 0 },
+      { name: 'सखुआ/सल (Sal)', rate: 0 },
+      { name: 'शीशम (Sheesham)', rate: 0 },
+      { name: 'आम (Mango)', rate: 0 },
+      { name: 'यूकेलिप्टस/लीपटिस (Eucalyptus/Liptis)', rate: 0 },
+      { name: 'बबूल (Babool/Acacia)', rate: 0 },
+      { name: 'नीम (Neem)', rate: 0 },
+      { name: 'जामुन (Jamun)', rate: 0 },
+      { name: 'अर्जुन (Arjun)', rate: 0 },
+      { name: 'सिरिस (Albizia)', rate: 0 }
+    ];
+
+    // ===== Keys =====
+    const PROFILE_KEY = 'sawmill_profile_v6';
+    const SPECIES_KEY = 'species_master_v2';
+    const DRAFT_INDEX_KEY = 'sawmill_v6_draft_index';
+    const DRAFT_KEY_PREFIX = 'sawmill_v6_draft_';
+    const SEQ_PREFIX = 'sawmill_v6_seq_';
+    const CURRENT_DRAFT_KEY = 'sawmill_v6_current_draft';
+    const EMAIL_CFG_KEY = 'sawmill_email_cfg_v1';
+
+    // ===== State (current working draft) =====
+    const state = {
+      mill: { name:'', address:'', mobile:'' },
+      invoice: { id:null, number:'', date:'', customer:'', status:'NA' }, // status: Draft/Finalized
+      items: [],
+      speciesMaster: [],
+      charges: { labour:0, nails:{count:0, rate:0}, custom:[] },
+      emailCfg: { enabled:false, to:'', serviceId:'', templateId:'', pubKey:'' }
+    };
+
+    // ===== DOM =====
+    const millName = document.getElementById('millName');
+    const millAddress = document.getElementById('millAddress');
+    const millMobile = document.getElementById('millMobile');
+
+    const invNumber = document.getElementById('invNumber');
+    const invDate = document.getElementById('invDate');
+    const customerName = document.getElementById('customerName');
+
+    const hMillName = document.getElementById('hMillName');
+    const hMillAddress = document.getElementById('hMillAddress');
+    const hMillMobile = document.getElementById('hMillMobile');
+    const hInvNumber = document.getElementById('hInvNumber');
+    const hInvDate = document.getElementById('hInvDate');
+    const hCustomerName = document.getElementById('hCustomerName');
+
+    const saveProfileBtn = document.getElementById('saveProfile');
+    const loadProfileBtn = document.getElementById('loadProfile');
+    const clearProfileBtn = document.getElementById('clearProfile');
+
+    const newDraftBtn = document.getElementById('newDraft');
+    const openDraftsBtn = document.getElementById('openDrafts');
+    const currentDraftIdBadge = document.getElementById('currentDraftId');
+    const currentDraftStatusBadge = document.getElementById('currentDraftStatus');
+    const currentDraftPinnedBadge = document.getElementById('currentDraftPinned');
+
+    const draftModal = document.getElementById('draftModal');
+    const closeDraftsBtn = document.getElementById('closeDrafts');
+    const draftListBody = document.getElementById('draftListBody');
+    const searchCustomer = document.getElementById('searchCustomer');
+    const searchDateFrom = document.getElementById('searchDateFrom');
+    const searchDateTo = document.getElementById('searchDateTo');
+    const applyDraftFilterBtn = document.getElementById('applyDraftFilter');
+
+    const itemType = document.getElementById('itemType');
+    const speciesSelect = document.getElementById('speciesSelect');
+    const rateInput = document.getElementById('rate');
+    const qtyInput = document.getElementById('qty');
+    const copiesInput = document.getElementById('copies');
+    const fillRateBtn = document.getElementById('fillRate');
+    const captureMode = document.getElementById('captureMode');
+
+    const speciesBody = document.getElementById('speciesBody');
+    const newSpeciesName = document.getElementById('newSpeciesName');
+    const newSpeciesRate = document.getElementById('newSpeciesRate');
+    const addSpeciesBtn = document.getElementById('addSpecies');
+    const saveSpeciesBtn = document.getElementById('saveSpecies');
+    const resetSpeciesBtn = document.getElementById('resetSpecies');
+
+    const bulkSpecies = document.getElementById('bulkSpecies');
+    const bulkSpeciesFilter = document.getElementById('bulkSpeciesFilter');
+    const bulkSpeciesOnlyEmpty = document.getElementById('bulkSpeciesOnlyEmpty');
+
+    const bulkRate = document.getElementById('bulkRate');
+    const bulkRateFilter = document.getElementById('bulkRateFilter');
+    const bulkRateOnlyZero = document.getElementById('bulkRateOnlyZero');
+
+    const applyBulkSpeciesBtn = document.getElementById('applyBulkSpecies');
+    const applyBulkRateBtn = document.getElementById('applyBulkRate');
+    const applyMasterAllBtn = document.getElementById('applyMasterAll');
+
+    const emailTo = document.getElementById('emailTo');
+    const emailjsService = document.getElementById('emailjsService');
+    const emailjsTemplate = document.getElementById('emailjsTemplate');
+    const emailjsPubKey = document.getElementById('emailjsPubKey');
+    const emailEnable = document.getElementById('emailEnable');
+    const saveEmailCfgBtn = document.getElementById('saveEmailCfg');
+
+    // Round fields
+    const r_len_ft = document.getElementById('r_len_ft');
+    const r_len_in = document.getElementById('r_len_in');
+    const r_len_pin = document.getElementById('r_len_pin');
+    const r_girth_in = document.getElementById('r_girth_in');
+    const r_girth_pin = document.getElementById('r_girth_pin');
+
+    // Rect fields
+    const t_len_ft = document.getElementById('t_len_ft');
+    const t_len_in = document.getElementById('t_len_in');
+    const t_len_pin = document.getElementById('t_len_pin');
+    const t_w_in = document.getElementById('t_w_in');
+    const t_w_pin = document.getElementById('t_w_pin');
+    const t_th_in = document.getElementById('t_th_in');
+    const t_th_pin = document.getElementById('t_th_pin');
+
+    // ===== Header sync =====
+    invDate.valueAsDate = new Date();
+    function syncHeader() {
+      state.mill.name = millName.value.trim();
+      state.mill.address = millAddress.value.trim();
+      state.mill.mobile = millMobile.value.trim();
+
+      state.invoice.number = invNumber.value.trim();
+      state.invoice.date = noDash(invDate.value) || state.invoice.date || todayStr();
+      state.invoice.customer = customerName.value.trim();
+
+      hMillName.textContent = state.mill.name || 'Mill Name';
+      hMillAddress.textContent = state.mill.address || 'Address';
+      hMillMobile.textContent = state.mill.mobile || 'Mobile';
+
+      hInvNumber.textContent = state.invoice.number || '—';
+      hInvDate.textContent = state.invoice.date || '';
+      hCustomerName.textContent = state.invoice.customer || 'Customer';
+
+      // auto-save to current draft if any
+      if (state.invoice.id) saveCurrentDraftMeta();
+    }
+    [millName, millAddress, millMobile, invNumber, invDate, customerName].forEach(el => el.addEventListener('input', syncHeader));
+
+    // Toggle type fields
+    itemType.addEventListener('change', () => {
+      if (itemType.value === 'round') {
+        document.getElementById('roundFields').style.display = '';
+        document.getElementById('rectFields').style.display = 'none';
+      } else {
+        document.getElementById('roundFields').style.display = 'none';
+        document.getElementById('rectFields').style.display = '';
+      }
+    });
+
+    // ===== Profile Save/Load/Clear (Auto-load at boot) =====
+    function loadProfile(auto=false) {
+      const s = localStorage.getItem(PROFILE_KEY);
+      if (!s) { if (!auto) alert('No saved profile'); return false; else return false; }
+      try {
+        const p = JSON.parse(s);
+        millName.value = p.name || '';
+        millAddress.value = p.address || '';
+        millMobile.value = p.mobile || '';
+        syncHeader();
+        if (!auto) alert('Profile loaded');
+        return true;
+      } catch(_) { return false; }
+    }
+    function saveProfile() {
+      const p = { name: millName.value.trim(), address: millAddress.value.trim(), mobile: millMobile.value.trim() };
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
+      alert('Profile saved');
+    }
+    function clearProfile() {
+      if (!confirm('Clear saved profile?')) return;
+      localStorage.removeItem(PROFILE_KEY);
+      millName.value = ''; millAddress.value = ''; millMobile.value = '';
+      syncHeader();
+      alert('Profile cleared');
+    }
+    saveProfileBtn.addEventListener('click', saveProfile);
+    loadProfileBtn.addEventListener('click', () => loadProfile(false));
+    clearProfileBtn.addEventListener('click', clearProfile);
+
+    // ===== Species Master =====
+    function loadSpeciesMaster() {
+      const s = localStorage.getItem(SPECIES_KEY);
+      state.speciesMaster = s ? JSON.parse(s) : DEFAULT_SPECIES.slice();
+      renderSpeciesMaster();
+      buildSpeciesSelects();
+    }
+    function saveSpeciesMaster() {
+      localStorage.setItem(SPECIES_KEY, JSON.stringify(state.speciesMaster));
+    }
+    function renderSpeciesMaster() {
+      speciesBody.innerHTML = '';
+      state.speciesMaster.forEach((sp, idx) => {
+        const tr = document.createElement('tr');
+
+        const tdName = document.createElement('td');
+        const nameInput = document.createElement('input');
+        nameInput.value = sp.name;
+        nameInput.addEventListener('input', () => { sp.name = nameInput.value; buildSpeciesSelects(); });
+        tdName.appendChild(nameInput);
+
+        const tdRate = document.createElement('td'); tdRate.className='right';
+        const rt = document.createElement('input'); rt.type='number'; rt.step='0.01'; rt.value = sp.rate || 0; rt.style.textAlign='right';
+        rt.addEventListener('input', () => sp.rate = toNum(rt.value));
+        tdRate.appendChild(rt);
+
+        const tdAct = document.createElement('td'); tdAct.className='right';
+        const del = document.createElement('button'); del.className='btn red small'; del.textContent='Delete';
+        del.addEventListener('click', () => {
+          if (!confirm('Delete species?')) return;
+          state.speciesMaster.splice(idx,1);
+          renderSpeciesMaster(); buildSpeciesSelects(); saveSpeciesMaster();
+        });
+        tdAct.appendChild(del);
+
+        tr.append(tdName, tdRate, tdAct);
+        speciesBody.appendChild(tr);
+      });
+    }
+    function buildSpeciesSelects() {
+      speciesSelect.innerHTML = '<option value="">— Select —</option>';
+      state.speciesMaster.forEach(sp => {
+        const o = document.createElement('option'); o.value = sp.name; o.textContent = sp.name;
+        speciesSelect.appendChild(o);
+      });
+      bulkSpecies.innerHTML = '';
+      state.speciesMaster.forEach(sp => {
+        const o = document.createElement('option'); o.value = sp.name; o.textContent = sp.name;
+        bulkSpecies.appendChild(o);
+      });
+    }
+    function masterRateFor(name) {
+      const sp = state.speciesMaster.find(s => s.name === name);
+      return sp ? (sp.rate || 0) : 0;
+    }
+    addSpeciesBtn.addEventListener('click', () => {
+      const nm = newSpeciesName.value.trim();
+      const rt = toNum(newSpeciesRate.value);
+      if (!nm) { alert('Enter species name'); return; }
+      state.speciesMaster.push({ name:nm, rate:rt });
+      newSpeciesName.value=''; newSpeciesRate.value='';
+      saveSpeciesMaster(); renderSpeciesMaster(); buildSpeciesSelects();
+    });
+    saveSpeciesBtn.addEventListener('click', () => { saveSpeciesMaster(); alert('Rates saved'); });
+    resetSpeciesBtn.addEventListener('click', () => {
+      if (!confirm('Reset to default species?')) return;
+      state.speciesMaster = DEFAULT_SPECIES.slice();
+      saveSpeciesMaster(); renderSpeciesMaster(); buildSpeciesSelects();
+    });
+
+    // Auto rate from master
+    fillRateBtn.addEventListener('click', () => {
+      const r = masterRateFor(speciesSelect.value);
+      if (r) rateInput.value = r;
+    });
+    speciesSelect.addEventListener('change', () => {
+      const r = masterRateFor(speciesSelect.value);
+      if (!toNum(rateInput.value)) rateInput.value = r || '';
+    });
+
+    // ===== Email config (store only) =====
+    function loadEmailCfg(auto=false) {
+      const s = localStorage.getItem(EMAIL_CFG_KEY);
+      if (!s) return;
+      try {
+        const cfg = JSON.parse(s);
+        state.emailCfg = { ...state.emailCfg, ...cfg };
+        emailTo.value = cfg.to || '';
+        emailjsService.value = cfg.serviceId || '';
+        emailjsTemplate.value = cfg.templateId || '';
+        emailjsPubKey.value = cfg.pubKey || '';
+        emailEnable.checked = !!cfg.enabled;
+      } catch(_){}
+    }
+    function saveEmailCfg() {
+      const cfg = {
+        enabled: !!emailEnable.checked,
+        to: emailTo.value.trim(),
+        serviceId: emailjsService.value.trim(),
+        templateId: emailjsTemplate.value.trim(),
+        pubKey: emailjsPubKey.value.trim()
+      };
+      state.emailCfg = cfg;
+      localStorage.setItem(EMAIL_CFG_KEY, JSON.stringify(cfg));
+      alert('Email settings saved');
+    }
+    saveEmailCfgBtn.addEventListener('click', saveEmailCfg);
+    emailEnable.addEventListener('change', () => {
+      const cfg = JSON.parse(localStorage.getItem(EMAIL_CFG_KEY) || '{}');
+      cfg.enabled = !!emailEnable.checked;
+      localStorage.setItem(EMAIL_CFG_KEY, JSON.stringify(cfg));
+    });
+
+    // ===== Drafts (index + CRUD + 7-day retention) =====
+    let draftIndex = []; // [{id, invNumber, date, customer, status, pinned, itemsCount, total, updatedAt}]
+
+    function loadDraftIndex() {
+      const s = localStorage.getItem(DRAFT_INDEX_KEY);
+      draftIndex = s ? JSON.parse(s) : [];
+    }
+    function saveDraftIndex() {
+      localStorage.setItem(DRAFT_INDEX_KEY, JSON.stringify(draftIndex));
+    }
+    function seqReserveFor(dateStr) {
+      const key = SEQ_PREFIX + dateStr;
+      const cur = parseInt(localStorage.getItem(key) || '0', 10);
+      const next = cur + 1;
+      localStorage.setItem(key, String(next));
+      return pad2(next); // 2-digit seq as per your choice
+    }
+    function reserveInvoiceNumber(dateStr) {
+      const seq = seqReserveFor(dateStr);
+      return `${seq}-${dateStr}`;
+    }
+    function updateCurrentDraftBadges() {
+      currentDraftIdBadge.textContent = state.invoice.id || '—';
+      currentDraftStatusBadge.textContent = state.invoice.status || 'No draft';
+      currentDraftPinnedBadge.style.display = (getIndexEntry(state.invoice.id)?.pinned ? '' : 'none');
+    }
+    function getDraftKey(id) { return DRAFT_KEY_PREFIX + id; }
+    function getIndexEntry(id) {
+      if (!id) return null;
+      return draftIndex.find(d => d.id === id) || null;
+    }
+    function saveCurrentDraftFull() {
+      if (!state.invoice.id) return;
+      const payload = {
+        mill: state.mill,
+        invoice: state.invoice,
+        items: state.items,
+        speciesMaster: state.speciesMaster, // for reference
+        charges: state.charges
+      };
+      localStorage.setItem(getDraftKey(state.invoice.id), JSON.stringify(payload));
+      localStorage.setItem(CURRENT_DRAFT_KEY, state.invoice.id);
+      // update index meta
+      const e = getIndexEntry(state.invoice.id);
+      if (e) {
+        e.customer = state.invoice.customer || e.customer;
+        e.date = state.invoice.date || e.date;
+        e.invNumber = state.invoice.number || e.invNumber;
+        e.itemsCount = state.items.length;
+        // total compute deferred to later parts (after items calc); keep as-is
+        e.updatedAt = Date.now();
+        saveDraftIndex();
+      }
+      updateCurrentDraftBadges();
+    }
+    function saveCurrentDraftMeta() {
+      if (!state.invoice.id) return;
+      localStorage.setItem(CURRENT_DRAFT_KEY, state.invoice.id);
+      const e = getIndexEntry(state.invoice.id);
+      if (e) {
+        e.customer = state.invoice.customer || e.customer;
+        e.date = state.invoice.date || e.date;
+        e.invNumber = state.invoice.number || e.invNumber;
+        e.updatedAt = Date.now();
+        saveDraftIndex();
+      }
+      updateCurrentDraftBadges();
+    }
+    function loadDraftIntoState(id) {
+      const s = localStorage.getItem(getDraftKey(id));
+      if (!s) { alert('Draft not found'); return false; }
+      try {
+        const d = JSON.parse(s);
+        state.mill = d.mill || state.mill;
+        state.invoice = d.invoice || state.invoice;
+        state.items = Array.isArray(d.items) ? d.items : [];
+        state.charges = d.charges || state.charges;
+        // species master stays global; do not override user's master unless needed
+
+        // Fill header inputs
+        millName.value = state.mill.name || '';
+        millAddress.value = state.mill.address || '';
+        millMobile.value = state.mill.mobile || '';
+        invNumber.value = state.invoice.number || '';
+        invDate.value = state.invoice.date ? ymdDash(state.invoice.date) : (invDate.value || '');
+        customerName.value = state.invoice.customer || '';
+        syncHeader();
+        updateCurrentDraftBadges();
+        return true;
+      } catch(e) {
+        console.error(e);
+        alert('Error loading draft');
+        return false;
+      }
+    }
+    function newDraft() {
+      const id = makeId();
+      // date for invoice: use selected date or today
+      const dateStr = noDash(invDate.value) || todayStr();
+      const invNo = reserveInvoiceNumber(dateStr);
+
+      state.invoice = { id, number: invNo, date: dateStr, customer: '', status:'Draft' };
+      state.items = [];
+      state.charges = { labour:0, nails:{count:0, rate:0}, custom:[] };
+
+      invNumber.value = invNo;
+      invDate.value = ymdDash(dateStr);
+      customerName.value = '';
+      syncHeader();
+
+      // add to index
+      draftIndex.push({
+        id, invNumber: invNo, date: dateStr, customer:'', status:'Draft',
+        pinned:false, itemsCount:0, total:0, updatedAt: Date.now()
+      });
+      saveDraftIndex();
+      saveCurrentDraftFull();
+      updateCurrentDraftBadges();
+      alert(`Draft created: ${invNo}`);
+    }
+    function deleteDraftById(id) {
+      if (!confirm('Delete this draft?')) return;
+      localStorage.removeItem(getDraftKey(id));
+      draftIndex = draftIndex.filter(d => d.id !== id);
+      saveDraftIndex();
+      if (state.invoice.id === id) {
+        state.invoice = { id:null, number:'', date:'', customer:'', status:'NA' };
+        state.items = [];
+        invNumber.value = ''; customerName.value = '';
+        hInvNumber.textContent = '—'; hCustomerName.textContent = 'Customer';
+        updateCurrentDraftBadges();
+      }
+      renderDraftList();
+    }
+    function duplicateDraftById(id) {
+      const s = localStorage.getItem(getDraftKey(id));
+      if (!s) return alert('Source draft not found');
+      const src = JSON.parse(s);
+      const newId = makeId();
+      const dateStr = src.invoice?.date || todayStr();
+      const invNo = reserveInvoiceNumber(dateStr);
+      const copy = {
+        mill: src.mill || state.mill,
+        invoice: { id:newId, number:invNo, date:dateStr, customer: src.invoice?.customer || '', status:'Draft' },
+        items: Array.isArray(src.items) ? src.items : [],
+        speciesMaster: state.speciesMaster,
+        charges: src.charges || { labour:0, nails:{count:0, rate:0}, custom:[] }
+      };
+      localStorage.setItem(getDraftKey(newId), JSON.stringify(copy));
+      draftIndex.push({
+        id:newId, invNumber:invNo, date:dateStr, customer:copy.invoice.customer, status:'Draft',
+        pinned:false, itemsCount:copy.items.length, total:0, updatedAt:Date.now()
+      });
+      saveDraftIndex();
+      renderDraftList();
+      alert(`Draft duplicated: ${invNo}`);
+    }
+    function togglePinDraft(id) {
+      const e = getIndexEntry(id);
+      if (!e) return;
+      e.pinned = !e.pinned;
+      saveDraftIndex();
+      if (state.invoice.id === id) updateCurrentDraftBadges();
+      renderDraftList();
+    }
+    function pruneOldDrafts() {
+      const today = todayStr();
+      const keep = [];
+      draftIndex.forEach(e => {
+        const age = daysBetween(e.date || today, today);
+        if (e.pinned || age <= 7) keep.push(e);
+        else localStorage.removeItem(getDraftKey(e.id));
+      });
+      draftIndex = keep;
+      saveDraftIndex();
+    }
+
+    // Draft modal list
+    function matchesFilter(e) {
+      const nameQ = (searchCustomer.value || '').toLowerCase();
+      const from = noDash(searchDateFrom.value);
+      const to = noDash(searchDateTo.value);
+      let ok = true;
+      if (nameQ) ok = ok && (e.customer || '').toLowerCase().includes(nameQ);
+      if (from) ok = ok && (e.date >= from);
+      if (to) ok = ok && (e.date <= to);
+      return ok;
+    }
+    function renderDraftList() {
+      draftListBody.innerHTML = '';
+      draftIndex
+        .slice()
+        .sort((a,b)=> (b.updatedAt||0) - (a.updatedAt||0))
+        .filter(matchesFilter)
+        .forEach(e => {
+          const tr = document.createElement('tr');
+          const tdId = document.createElement('td'); tdId.textContent = e.id;
+          const tdNo = document.createElement('td'); tdNo.textContent = e.invNumber || '—';
+          const tdCust = document.createElement('td'); tdCust.textContent = e.customer || '—';
+          const tdDate = document.createElement('td'); tdDate.textContent = e.date || '—';
+          const tdStatus = document.createElement('td'); tdStatus.innerHTML = `<span class="badge ${e.status==='Finalized'?'final':''}">${e.status||'Draft'}</span>`;
+          const tdPin = document.createElement('td'); tdPin.innerHTML = e.pinned ? '<span class="badge pin">Pinned</span>' : '—';
+          const tdItems = document.createElement('td'); tdItems.className='right'; tdItems.textContent = e.itemsCount || 0;
+          const tdTotal = document.createElement('td'); tdTotal.className='right'; tdTotal.textContent = e.total ? fmtMoney(e.total) : '0.00';
+          const tdAct = document.createElement('td'); tdAct.className='right';
+          const openBtn = document.createElement('button'); openBtn.className='btn small'; openBtn.textContent='Open';
+          openBtn.addEventListener('click', () => { if(loadDraftIntoState(e.id)) { draftModal.classList.remove('show'); } });
+          const dupBtn = document.createElement('button'); dupBtn.className='btn gray small'; dupBtn.textContent='Duplicate';
+          dupBtn.style.marginLeft='6px'; dupBtn.addEventListener('click', () => duplicateDraftById(e.id));
+          const pinBtn = document.createElement('button'); pinBtn.className='btn gray small'; pinBtn.textContent = e.pinned ? 'Unpin' : 'Pin';
+          pinBtn.style.marginLeft='6px'; pinBtn.addEventListener('click', () => togglePinDraft(e.id));
+          const delBtn = document.createElement('button'); delBtn.className='btn red small'; delBtn.textContent='Delete';
+          delBtn.style.marginLeft='6px'; delBtn.addEventListener('click', () => deleteDraftById(e.id));
+          tdAct.append(openBtn, dupBtn, pinBtn, delBtn);
+
+          tr.append(tdId, tdNo, tdCust, tdDate, tdStatus, tdPin, tdItems, tdTotal, tdAct);
+          draftListBody.appendChild(tr);
+        });
+    }
+    openDraftsBtn.addEventListener('click', () => { renderDraftList(); draftModal.classList.add('show'); });
+    closeDraftsBtn.addEventListener('click', () => draftModal.classList.remove('show'));
+    applyDraftFilterBtn.addEventListener('click', renderDraftList);
+
+    // Current draft toolbar buttons (outside modal)
+    document.getElementById('duplicateDraft').addEventListener('click', () => {
+      if (!state.invoice.id) { alert('No current draft'); return; }
+      duplicateDraftById(state.invoice.id);
+    });
+    document.getElementById('pinToggle').addEventListener('click', () => {
+      if (!state.invoice.id) { alert('No current draft'); return; }
+      togglePinDraft(state.invoice.id);
+    });
+    document.getElementById('deleteDraft').addEventListener('click', () => {
+      if (!state.invoice.id) { alert('No current draft'); return; }
+      deleteDraftById(state.invoice.id);
+    });
+
+    newDraftBtn.addEventListener('click', newDraft);
+
+    // ===== Boot (minimal; items/charges rendering will come in next parts) =====
+    function initialBoot() {
+      loadProfile(true);
+      loadSpeciesMaster();
+      loadEmailCfg(true);
+      loadDraftIndex();
+      pruneOldDrafts();
+
+      // Auto-load last current draft if present
+      const lastId = localStorage.getItem(CURRENT_DRAFT_KEY);
+      if (lastId && getIndexEntry(lastId)) {
+        loadDraftIntoState(lastId);
+      } else {
+        // set default header date
+        if (!invDate.value) invDate.valueAsDate = new Date();
+        syncHeader();
+      }
+      updateCurrentDraftBadges();
+    }
+    initialBoot();
+
+    // ===== Items =====
+    // ===== Items (compute, add, render) =====
+    // Extra DOM refs used here (not declared earlier)
+    const toggleEditBtn = document.getElementById('toggleEdit');
+    const invoicePreview = document.getElementById('invoicePreview');
+    const invoiceEditor = document.getElementById('invoiceEditor');
+
+    // Charges editor refs
+    const labourAmount = document.getElementById('labourAmount');
+    const nailCount = document.getElementById('nailCount');
+    const nailRate = document.getElementById('nailRate');
+    const customChargesBody = document.getElementById('customChargesBody');
+    const newChargeLabel = document.getElementById('newChargeLabel');
+    const newChargeAmount = document.getElementById('newChargeAmount');
+    const addChargeBtn = document.getElementById('addCharge');
+
+    // Preview refs (totals)
+    const previewBody = document.getElementById('previewBody');
+    const previewItemsCount = document.getElementById('previewItemsCount');
+    const previewTotalFoot = document.getElementById('previewTotalFoot');
+    const previewTotalAmount = document.getElementById('previewTotalAmount');
+    const chargesPreviewBody = document.getElementById('chargesPreviewBody');
+    const chargesTotalCell = document.getElementById('chargesTotalCell');
+    const grandTotalCell = document.getElementById('grandTotalCell');
+
+    // Editor refs
+    const editorBody = document.getElementById('editorBody');
+    const editorItemsCount = document.getElementById('editorItemsCount');
+    const editorTotalFoot = document.getElementById('editorTotalFoot');
+    const editorTotalAmount = document.getElementById('editorTotalAmount');
+
+    function makeSizeText(it) {
+      if (it.type === 'round') {
+        const L = it._calc?.L || feetFromFIP(it.lenFt||0, it.lenIn||0, it.lenPin||0);
+        const G = it._calc?.G || inchesFromIP(it.girthIn||0, it.girthPin||0);
+        return `L: ${fmtFIP(L)}, Girth: ${G.toFixed(2)} in`;
+      } else {
+        const L = it._calc?.L || feetFromFIP(it.lenFt||0, it.lenIn||0, it.lenPin||0);
+        const W = it._calc?.W || inchesFromIP(it.wIn||0, it.wPin||0);
+        const T = it._calc?.T || inchesFromIP(it.tIn||0, it.tPin||0);
+        return `L: ${fmtFIP(L)}, W: ${W.toFixed(2)} in, T: ${T.toFixed(2)} in`;
+      }
+    }
+    function computeItem(it) {
+      if (it.type === 'round') {
+        const L = feetFromFIP(it.lenFt||0, it.lenIn||0, it.lenPin||0);
+        const G = inchesFromIP(it.girthIn||0, it.girthPin||0);
+        it._calc = { L, G };
+        it.footPerPc = (L>0 && G>0) ? hoppusFoot(G, L) : 0;
+      } else {
+        const L = feetFromFIP(it.lenFt||0, it.lenIn||0, it.lenPin||0);
+        const W = inchesFromIP(it.wIn||0, it.wPin||0);
+        const T = inchesFromIP(it.tIn||0, it.tPin||0);
+        it._calc = { L, W, T };
+        it.footPerPc = (L>0 && W>0 && T>0) ? rectFoot(L, W, T) : 0;
+      }
+      it.foot = (it.footPerPc || 0) * (it.qty || 0);
+      it.amount = (it.rate || 0) * it.foot;
+      it.sizeText = makeSizeText(it);
+    }
+
+    function clearItemForm() {
+      // keep species & rate sticky for quick capture
+      qtyInput.value = 1;
+      copiesInput.value = 1;
+      r_len_ft.value=''; r_len_in.value=''; r_len_pin.value='';
+      r_girth_in.value=''; r_girth_pin.value='';
+      t_len_ft.value=''; t_len_in.value=''; t_len_pin.value='';
+      t_w_in.value=''; t_w_pin.value=''; t_th_in.value=''; t_th_pin.value='';
+    }
+
+    function addItemCore(keepValues=false) {
+      const type = itemType.value;
+      const sp = speciesSelect.value || '';
+      const r = toNum(rateInput.value);
+      const q = Math.max(1, Math.floor(toNum(qtyInput.value)));
+      const copies = Math.max(1, Math.floor(toNum(copiesInput.value)));
+      const totalQty = q * copies;
+      const allowZero = captureMode.checked;
+
+      if (!allowZero) {
+        if (!sp) { alert('Please select Species'); return; }
+        if (!r || r <= 0) { alert('Enter valid Rate'); return; }
+      }
+
+      const it = {
+        id: Math.random().toString(36).slice(2),
+        type, species: sp, rate: r, qty: totalQty,
+        lenFt:0, lenIn:0, lenPin:0, girthIn:0, girthPin:0,
+        wIn:0, wPin:0, tIn:0, tPin:0,
+        footPerPc:0, foot:0, amount:0, sizeText:'', _calc:{}
+      };
+
+      if (type === 'round') {
+        it.lenFt = toNum(r_len_ft.value); it.lenIn = toNum(r_len_in.value); it.lenPin = toNum(r_len_pin.value);
+        it.girthIn = toNum(r_girth_in.value); it.girthPin = toNum(r_girth_pin.value);
+      } else {
+        it.lenFt = toNum(t_len_ft.value); it.lenIn = toNum(t_len_in.value); it.lenPin = toNum(t_len_pin.value);
+        it.wIn = toNum(t_w_in.value); it.wPin = toNum(t_w_pin.value);
+        it.tIn = toNum(t_th_in.value); it.tPin = toNum(t_th_pin.value);
+      }
+
+      computeItem(it);
+      state.items.push(it);
+      saveCurrentDraftFull();
+      renderAll();
+
+      if (keepValues) {
+        // clear only dimensions & reset qty/copies, keep species/rate
+        if (type === 'round') {
+          r_len_ft.value=''; r_len_in.value=''; r_len_pin.value='';
+          r_girth_in.value=''; r_girth_pin.value='';
+          r_len_ft.focus();
+        } else {
+          t_len_ft.value=''; t_len_in.value=''; t_len_pin.value='';
+          t_w_in.value=''; t_w_pin.value=''; t_th_in.value=''; t_th_pin.value='';
+          t_len_ft.focus();
+        }
+        qtyInput.value = 1; copiesInput.value = 1;
+      } else {
+        clearItemForm();
+      }
+    }
+
+    document.getElementById('addItem').addEventListener('click', () => addItemCore(false));
+    document.getElementById('addItemKeep').addEventListener('click', () => addItemCore(true));
+    document.getElementById('clearItemForm').addEventListener('click', clearItemForm);
+    // Enter on last dim field to add quickly
+    r_girth_pin.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addItemCore(true); });
+    t_th_pin.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addItemCore(true); });
+
+    // ===== Bulk Apply (Species / Rate / Master) =====
+    function filterMatchItem(it, filterVal) {
+      if (!filterVal || filterVal === 'all') return true;
+      if (filterVal === 'round') return it.type === 'round';
+      if (filterVal === 'rect') return it.type === 'rect';
+      return true;
+    }
+    applyBulkSpeciesBtn.addEventListener('click', () => {
+      const sp = bulkSpecies.value;
+      const filterVal = bulkSpeciesFilter?.value || 'all';
+      const onlyEmpty = !!bulkSpeciesOnlyEmpty?.checked;
+      if (!sp) { alert('Select a species to apply'); return; }
+      state.items.forEach(it => {
+        if (!filterMatchItem(it, filterVal)) return;
+        if (onlyEmpty && it.species) return;
+        it.species = sp;
+        if (!it.rate || it.rate===0) it.rate = masterRateFor(sp) || 0;
+        computeItem(it);
+      });
+      saveCurrentDraftFull();
+      renderAll();
+    });
+
+    applyBulkRateBtn.addEventListener('click', () => {
+      const r = toNum(bulkRate.value);
+      const filterVal = bulkRateFilter?.value || 'all';
+      const onlyZero = !!bulkRateOnlyZero?.checked;
+      if (!r || r <= 0) { alert('Enter a valid bulk rate'); return; }
+      state.items.forEach(it => {
+        if (!filterMatchItem(it, filterVal)) return;
+        if (onlyZero && it.rate && it.rate > 0) return;
+        it.rate = r;
+        computeItem(it);
+      });
+      saveCurrentDraftFull();
+      renderAll();
+    });
+
+    applyMasterAllBtn.addEventListener('click', () => {
+      state.items.forEach(it => {
+        if (it.species) it.rate = masterRateFor(it.species) || 0;
+        computeItem(it);
+      });
+      saveCurrentDraftFull();
+      renderAll();
+    });
+
+    // ===== Charges (Labour / Nails / Custom) =====
+    function syncChargesFromInputs() {
+      state.charges.labour = toNum(labourAmount.value);
+      state.charges.nails.count = Math.max(0, Math.floor(toNum(nailCount.value)));
+      state.charges.nails.rate = toNum(nailRate.value);
+    }
+    function renderCustomChargesEditor() {
+      customChargesBody.innerHTML = '';
+      (state.charges.custom || []).forEach((ch, idx) => {
+        const tr = document.createElement('tr');
+
+        const tdLabel = document.createElement('td');
+        const inLabel = document.createElement('input');
+        inLabel.value = ch.label || '';
+        inLabel.addEventListener('input', () => { ch.label = inLabel.value; saveCurrentDraftFull(); });
+        tdLabel.appendChild(inLabel);
+
+        const tdAmt = document.createElement('td'); tdAmt.className='right';
+        const inAmt = document.createElement('input'); inAmt.type='number'; inAmt.step='0.01'; inAmt.value = ch.amount || 0; inAmt.style.textAlign='right';
+        inAmt.addEventListener('input', () => { ch.amount = toNum(inAmt.value); saveCurrentDraftFull(); renderAll(); });
+        tdAmt.appendChild(inAmt);
+
+        const tdAct = document.createElement('td'); tdAct.className='right';
+        const del = document.createElement('button'); del.className='btn red small'; del.textContent='Delete';
+        del.addEventListener('click', () => { state.charges.custom.splice(idx,1); saveCurrentDraftFull(); renderAll(); });
+        tdAct.appendChild(del);
+
+        tr.append(tdLabel, tdAmt, tdAct);
+        customChargesBody.appendChild(tr);
+      });
+    }
+    addChargeBtn.addEventListener('click', () => {
+      const label = newChargeLabel.value.trim();
+      const amt = toNum(newChargeAmount.value);
+      if (!label && !amt) { alert('Enter charge label or amount'); return; }
+      state.charges.custom.push({ label: label || 'Extra charge', amount: amt || 0 });
+      newChargeLabel.value=''; newChargeAmount.value='';
+      saveCurrentDraftFull();
+      renderCustomChargesEditor(); renderAll();
+    });
+    labourAmount.addEventListener('input', () => { syncChargesFromInputs(); saveCurrentDraftFull(); renderAll(); });
+    nailCount.addEventListener('input', () => { syncChargesFromInputs(); saveCurrentDraftFull(); renderAll(); });
+    nailRate.addEventListener('input', () => { syncChargesFromInputs(); saveCurrentDraftFull(); renderAll(); });
+
+    function renderCharges(itemsTotalAmount=0) {
+      syncChargesFromInputs();
+      chargesPreviewBody.innerHTML = '';
+      let chargesTotal = 0;
+
+      // Labour
+      if (state.charges.labour) {
+        const tr = document.createElement('tr');
+        const tdl = document.createElement('td'); tdl.textContent = 'Labour';
+        const tda = document.createElement('td'); tda.className='right'; tda.textContent = fmtMoney(state.charges.labour);
+        tr.append(tdl, tda); chargesPreviewBody.appendChild(tr);
+        chargesTotal += state.charges.labour;
+      }
+      // Nails
+      const nailAmt = (state.charges.nails.count || 0) * (state.charges.nails.rate || 0);
+      if (nailAmt) {
+        const tr = document.createElement('tr');
+        const tdl = document.createElement('td'); tdl.textContent = `Nails (${state.charges.nails.count} × ₹${fmtMoney(state.charges.nails.rate)})`;
+        const tda = document.createElement('td'); tda.className='right'; tda.textContent = fmtMoney(nailAmt);
+        tr.append(tdl, tda); chargesPreviewBody.appendChild(tr);
+        chargesTotal += nailAmt;
+      }
+      // Custom list
+      (state.charges.custom || []).forEach(ch => {
+        const a = toNum(ch.amount);
+        if (!a) return;
+        const tr = document.createElement('tr');
+        const tdl = document.createElement('td'); tdl.textContent = ch.label || 'Charge';
+        const tda = document.createElement('td'); tda.className='right'; tda.textContent = fmtMoney(a);
+        tr.append(tdl, tda); chargesPreviewBody.appendChild(tr);
+        chargesTotal += a;
+      });
+
+      chargesTotalCell.textContent = fmtMoney(chargesTotal);
+      const grand = itemsTotalAmount + chargesTotal;
+      grandTotalCell.textContent = fmtMoney(grand);
+
+      // Update draft index total for manager list
+      const entry = getIndexEntry(state.invoice.id);
+      if (entry) { entry.total = grand; saveDraftIndex(); }
+    }
+
+    // ===== Preview (read-only) =====
+    function renderPreview() {
+      previewBody.innerHTML = '';
+      let totalFoot = 0, totalAmt = 0;
+
+      state.items.forEach((it, idx) => {
+        totalFoot += it.foot; totalAmt += it.amount;
+        const tr = document.createElement('tr');
+
+        const tdIdx = document.createElement('td'); tdIdx.textContent = String(idx+1);
+        const tdType = document.createElement('td'); tdType.innerHTML = it.type === 'round' ? '<span class="badge">Round</span>' : '<span class="badge">Rectangle</span>';
+        const tdSp = document.createElement('td'); tdSp.textContent = it.species || '-';
+        const tdSize = document.createElement('td'); tdSize.textContent = it.sizeText || '-';
+        const tdQty = document.createElement('td'); tdQty.className='right'; tdQty.textContent = it.qty || 0;
+        const tdRate = document.createElement('td'); tdRate.className='right'; tdRate.textContent = fmtMoney(it.rate || 0);
+        const tdFoot = document.createElement('td'); tdFoot.className='right'; tdFoot.textContent = fmtFIP(it.foot || 0);
+        const tdAmt = document.createElement('td'); tdAmt.className='right'; tdAmt.textContent = fmtMoney(it.amount || 0);
+
+        tr.append(tdIdx, tdType, tdSp, tdSize, tdQty, tdRate, tdFoot, tdAmt);
+        previewBody.appendChild(tr);
+      });
+
+      previewItemsCount.textContent = `Items (${state.items.length}):`;
+      previewTotalFoot.textContent = fmtFIP(totalFoot);
+      previewTotalAmount.textContent = fmtMoney(totalAmt);
+
+      // Update index quick fields
+      const entry = getIndexEntry(state.invoice.id);
+      if (entry) {
+        entry.itemsCount = state.items.length;
+        entry.updatedAt = Date.now();
+        saveDraftIndex();
+      }
+
+      renderCharges(totalAmt);
+    }
+
+    // ===== Editor (inline editable) =====
+    function renderEditor() {
+      editorBody.innerHTML = '';
+      let totalFoot = 0, totalAmt = 0;
+
+      state.items.forEach((it, idx) => {
+        totalFoot += it.foot; totalAmt += it.amount;
+
+        const tr = document.createElement('tr');
+        const tdIdx = document.createElement('td'); tdIdx.textContent = String(idx+1);
+
+        // Type
+        const tdType = document.createElement('td');
+        const selType = document.createElement('select');
+        selType.innerHTML = `<option value="round">Round</option><option value="rect">Rectangle</option>`;
+        selType.value = it.type;
+        selType.addEventListener('change', () => {
+          it.type = selType.value;
+          computeItem(it);
+          saveCurrentDraftFull();
+          renderEditor(); // re-render row for different dims
+          renderPreview();
+        });
+        tdType.appendChild(selType);
+
+        // Species
+        const tdSp = document.createElement('td');
+        const selSp = document.createElement('select');
+        const optEmpty = document.createElement('option'); optEmpty.value=''; optEmpty.textContent='—';
+        selSp.appendChild(optEmpty);
+        state.speciesMaster.forEach(sp => {
+          const o = document.createElement('option'); o.value = sp.name; o.textContent = sp.name; selSp.appendChild(o);
+        });
+        selSp.value = it.species || '';
+        selSp.addEventListener('change', () => {
+          it.species = selSp.value;
+          if (!it.rate || it.rate===0) it.rate = masterRateFor(it.species) || 0;
+          computeItem(it); saveCurrentDraftFull(); renderTotalsOnly(); renderPreview();
+        });
+        tdSp.appendChild(selSp);
+
+        // Size
+        const tdSize = document.createElement('td');
+        const wrap = document.createElement('div');
+        let recalc;
+        if (it.type === 'round') {
+          wrap.innerHTML = `
+            L: <input type="number" step="1" min="0" value="${it.lenFt||0}" style="width:58px"> ft
+               <input type="number" step="1" min="0" value="${it.lenIn||0}" style="width:58px"> in
+               <input type="number" step="1" min="0" max="11" value="${it.lenPin||0}" style="width:58px"> pin
+            | Girth: <input type="number" step="0.01" min="0" value="${it.girthIn||0}" style="width:80px"> in
+               <input type="number" step="1" min="0" max="11" value="${it.girthPin||0}" style="width:58px"> pin`;
+          const [lf, li, lp, gi, gp] = wrap.querySelectorAll('input');
+          recalc = () => {
+            it.lenFt=toNum(lf.value); it.lenIn=toNum(li.value); it.lenPin=toNum(lp.value);
+            it.girthIn=toNum(gi.value); it.girthPin=toNum(gp.value);
+            computeItem(it); saveCurrentDraftFull();
+            tdFoot.textContent=fmtFIP(it.foot); tdAmt.textContent=fmtMoney(it.amount);
+            tdSizeNote.textContent=it.sizeText; renderTotalsOnly(); renderPreview();
+          };
+          [lf,li,lp,gi,gp].forEach(inp => inp.addEventListener('input', recalc));
+        } else {
+          wrap.innerHTML = `
+            L: <input type="number" step="1" min="0" value="${it.lenFt||0}" style="width:58px"> ft
+               <input type="number" step="1" min="0" value="${it.lenIn||0}" style="width:58px"> in
+               <input type="number" step="1" min="0" max="11" value="${it.lenPin||0}" style="width:58px"> pin
+            | W: <input type="number" step="0.01" min="0" value="${it.wIn||0}" style="width:80px"> in
+               <input type="number" step="1" min="0" max="11" value="${it.wPin||0}" style="width:58px"> pin
+            | T: <input type="number" step="0.01" min="0" value="${it.tIn||0}" style="width:80px"> in
+               <input type="number" step="1" min="0" max="11" value="${it.tPin||0}" style="width:58px"> pin`;
+          const [lf, li, lp, w, wp, t, tp] = wrap.querySelectorAll('input');
+          recalc = () => {
+            it.lenFt=toNum(lf.value); it.lenIn=toNum(li.value); it.lenPin=toNum(lp.value);
+            it.wIn=toNum(w.value); it.wPin=toNum(wp.value);
+            it.tIn=toNum(t.value); it.tPin=toNum(tp.value);
+            computeItem(it); saveCurrentDraftFull();
+            tdFoot.textContent=fmtFIP(it.foot); tdAmt.textContent=fmtMoney(it.amount);
+            tdSizeNote.textContent=it.sizeText; renderTotalsOnly(); renderPreview();
+          };
+          [lf,li,lp,w,wp,t,tp].forEach(inp => inp.addEventListener('input', recalc));
+        }
+        tdSize.appendChild(wrap);
+        const tdSizeNote = document.createElement('div'); tdSizeNote.className='small dim'; tdSizeNote.textContent = it.sizeText || '-';
+        tdSize.appendChild(tdSizeNote);
+
+        // Qty
+        const tdQty = document.createElement('td'); tdQty.className='right';
+        const inQty = document.createElement('input'); inQty.type='number'; inQty.min='1'; inQty.step='1'; inQty.value = it.qty || 1; inQty.style.width='80px'; inQty.style.textAlign='right';
+        inQty.addEventListener('input', () => { it.qty = Math.max(1, Math.floor(toNum(inQty.value))); computeItem(it); saveCurrentDraftFull(); tdFoot.textContent=fmtFIP(it.foot); tdAmt.textContent=fmtMoney(it.amount); renderTotalsOnly(); renderPreview(); });
+        tdQty.appendChild(inQty);
+
+        // Rate
+        const tdRate = document.createElement('td'); tdRate.className='right';
+        const inRate = document.createElement('input'); inRate.type='number'; inRate.step='0.01'; inRate.value = it.rate || 0; inRate.style.width='100px'; inRate.style.textAlign='right';
+        inRate.addEventListener('input', () => { it.rate = toNum(inRate.value); computeItem(it); saveCurrentDraftFull(); tdAmt.textContent=fmtMoney(it.amount); renderTotalsOnly(); renderPreview(); });
+        const btnUseMaster = document.createElement('button'); btnUseMaster.className='btn link'; btnUseMaster.textContent='Use master';
+        btnUseMaster.addEventListener('click', () => { it.rate = masterRateFor(it.species) || 0; inRate.value = it.rate; computeItem(it); saveCurrentDraftFull(); tdAmt.textContent=fmtMoney(it.amount); renderTotalsOnly(); renderPreview(); });
+        tdRate.append(inRate, btnUseMaster);
+
+        // Foot
+        const tdFoot = document.createElement('td'); tdFoot.className='right'; tdFoot.textContent = fmtFIP(it.foot);
+
+        // Amount
+        const tdAmt = document.createElement('td'); tdAmt.className='right'; tdAmt.textContent = fmtMoney(it.amount);
+
+        // Action
+        const tdAct = document.createElement('td'); tdAct.className='right';
+        const del = document.createElement('button'); del.className='btn red small'; del.textContent='Delete';
+        del.addEventListener('click', () => { state.items.splice(idx,1); saveCurrentDraftFull(); renderEditor(); renderPreview(); });
+        tdAct.appendChild(del);
+
+        tr.append(tdIdx, tdType, tdSp, tdSize, tdQty, tdRate, tdFoot, tdAmt, tdAct);
+        editorBody.appendChild(tr);
+      });
+
+      editorItemsCount.textContent = `Items (${state.items.length}):`;
+      editorTotalFoot.textContent = fmtFIP(totalFoot);
+      editorTotalAmount.textContent = fmtMoney(totalAmt);
+
+      function renderTotalsOnly() {
+        let tf=0, ta=0;
+        state.items.forEach(i=>{ tf += i.foot; ta += i.amount; });
+        editorTotalFoot.textContent = fmtFIP(tf);
+        editorTotalAmount.textContent = fmtMoney(ta);
+      }
+    }
+
+    toggleEditBtn.addEventListener('click', () => {
+      const showEditor = invoiceEditor.style.display === 'none';
+      invoiceEditor.style.display = showEditor ? '' : 'none';
+      invoicePreview.style.display = showEditor ? 'none' : '';
+      if (showEditor) renderEditor();
+    });
+
+    // ===== Render root =====
+    function renderAll() {
+      renderPreview();
+      if (invoiceEditor.style.display !== 'none') renderEditor();
+      renderCustomChargesEditor();
+    }
+
+    // ===== PDF (pdfmake) + Generate/Print/Finalize + Email-to-self =====
+
+    // Build Items table for PDF
+    function itemsTableBodyForPdf() {
+      const header = [
+        {text:'#', bold:true},
+        {text:'Type', bold:true},
+        {text:'Species', bold:true},
+        {text:'Size', bold:true},
+        {text:'Qty', bold:true, alignment:'right'},
+        {text:'Rate (₹/ft)', bold:true, alignment:'right'},
+        {text:'Foot', bold:true, alignment:'right'},
+        {text:'Amount (₹)', bold:true, alignment:'right'}
+      ];
+      const body = [header];
+      let itemsTotalFoot = 0, itemsTotalAmount = 0;
+
+      state.items.forEach((it, idx) => {
+        itemsTotalFoot += (it.foot || 0);
+        itemsTotalAmount += (it.amount || 0);
+        body.push([
+          String(idx+1),
+          it.type === 'round' ? 'Round' : 'Rectangle',
+          it.species || '-',
+          it.sizeText || '-',
+          { text:String(it.qty||0), alignment:'right' },
+          { text:fmtMoney(it.rate||0), alignment:'right' },
+          { text:fmtFIP(it.foot||0), alignment:'right' },
+          { text:fmtMoney(it.amount||0), alignment:'right' }
+        ]);
+      });
+
+      body.push([
+        {text:`Items (${state.items.length})`, colSpan:5, alignment:'right', bold:true}, {}, {}, {}, {},
+        {text:'Total Foot', alignment:'right', bold:true},
+        {text:fmtFIP(itemsTotalFoot), alignment:'right', bold:true},
+        {text:fmtMoney(itemsTotalAmount), alignment:'right', bold:true}
+      ]);
+
+      return { body, itemsTotalFoot, itemsTotalAmount };
+    }
+
+    function chargesContentForPdf(itemsTotalAmount) {
+      const rows = [];
+      let chargesTotal = 0;
+
+      if (state.charges.labour) {
+        rows.push(['Labour', { text: fmtMoney(state.charges.labour), alignment:'right' }]);
+        chargesTotal += state.charges.labour;
+      }
+      const nailAmt = (state.charges.nails.count || 0) * (state.charges.nails.rate || 0);
+      if (nailAmt) {
+        rows.push([`Nails (${state.charges.nails.count} × ₹${fmtMoney(state.charges.nails.rate)})`, { text: fmtMoney(nailAmt), alignment:'right' }]);
+        chargesTotal += nailAmt;
+      }
+      (state.charges.custom || []).forEach(ch => {
+        const amt = toNum(ch?.amount);
+        if (!amt) return;
+        rows.push([ch.label || 'Charge', { text: fmtMoney(amt), alignment:'right' }]);
+        chargesTotal += amt;
+      });
+
+      const content = [];
+      if (rows.length) {
+        content.push({ text:'Charges', bold:true, margin:[0,8,0,4] });
+        content.push({
+          table: { widths:['*', 80], body: rows },
+          layout: 'lightHorizontalLines'
+        });
+      }
+
+      const grand = itemsTotalAmount + chargesTotal;
+      content.push({
+        table: {
+          widths: ['*', 80],
+          body: [
+            [{text:'Charges Total', bold:true, alignment:'right'}, {text: fmtMoney(chargesTotal), alignment:'right', bold:true}],
+            [{text:'Grand Total', bold:true, alignment:'right'}, {text: fmtMoney(grand), alignment:'right', bold:true}]
+          ]
+        },
+        layout: 'noBorders',
+        margin:[0,6,0,0]
+      });
+
+      return { content, chargesTotal, grand };
+    }
+
+    function hasHindiText() {
+      // detect Devanagari letters in species or customer/mill name
+      const re = /[\u0900-\u097F]/;
+      if (re.test(state.mill.name) || re.test(state.mill.address) || re.test(state.invoice.customer)) return true;
+      for (const sp of (state.items || [])) {
+        if (re.test(sp.species || '')) return true;
+      }
+      return false;
+    }
+
+    function buildPdfDocDef() {
+      const { body, itemsTotalAmount } = (() => {
+        const t = itemsTableBodyForPdf();
+        return { body: t.body, itemsTotalAmount: t.itemsTotalAmount };
+      })();
+
+      // choose landscape by default to avoid crop, compact font
+      const widthsLandscape = [18, 50, 150, '*', 30, 70, 85, 80];
+
+      const dateStr = state.invoice.date || todayStr();
+      const docDef = {
+        pageSize: 'A4',
+        pageMargins: [16,16,16,16],
+        pageOrientation: 'landscape',
+        content: [
+          { text: state.mill.name || 'Mill Name', style:'title' },
+          {
+            columns: [
+              { width:'*', text: `${state.mill.address || 'Address'}\n${state.mill.mobile || 'Mobile'}`, style:'sub' },
+              { width:'*', alignment:'right', text: `Invoice: ${state.invoice.number || '—'}\nDate: ${dateStr}\nCustomer: ${state.invoice.customer || ''}`, style:'sub' }
+            ],
+            columnGap: 8,
+            margin:[0,0,0,6]
+          },
+          {
+            table: {
+              headerRows: 1,
+              widths: widthsLandscape,
+              body
+            },
+            layout: 'lightHorizontalLines'
+          },
+          { text: 'Units: 1 foot = 12 inch, 1 inch = 12 pin. Round uses Hoppus (girth method).', style:'note', margin:[0,6,0,0] },
+          ...chargesContentForPdf(itemsTotalAmount).content
+        ],
+        styles: {
+          title: { fontSize: 16, bold: true, margin:[0,0,0,6] },
+          sub: { fontSize: 10, color:'#444' },
+          note: { fontSize: 9, color:'#666' }
+        },
+        defaultStyle: { fontSize: 9 },
+        footer: function(currentPage, pageCount) {
+          return { text: `Page ${currentPage} of ${pageCount}`, alignment: 'right', margin:[0,0,16,8], fontSize:8, color:'#666' };
+        }
+      };
+      return docDef;
+    }
+
+    function downloadPdfNow(docDef, fileName) {
+      pdfStatus.textContent = 'Generating PDF...';
+      pdfMake.createPdf(docDef).download(fileName, () => {
+        pdfStatus.textContent = 'PDF saved (Downloads).';
+      });
+    }
+
+    function getPdfBase64(docDef) {
+      return new Promise((resolve, reject) => {
+        try {
+          pdfMake.createPdf(docDef).getBase64(b64 => resolve(b64));
+        } catch (e) { reject(e); }
+      });
+    }
+
+    // EmailJS loader + sender
+    async function ensureEmailJsLoaded(pubKey) {
+      if (window.emailjs && typeof window.emailjs.init === 'function') {
+        try { window.emailjs.init(pubKey); } catch(_) {}
+        return true;
+      }
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js';
+        s.onload = () => { try { window.emailjs.init(pubKey); } catch(_) {} res(true); };
+        s.onerror = () => res(false);
+        document.head.appendChild(s);
+      });
+      return !!window.emailjs;
+    }
+
+    async function emailSelfWithPdf(base64, fileName) {
+      const cfg = state.emailCfg || {};
+      if (!cfg.enabled) return { ok:false, why:'disabled' };
+      if (!cfg.to || !cfg.serviceId || !cfg.templateId || !cfg.pubKey) {
+        return { ok:false, why:'missing-config' };
+      }
+      const ok = await ensureEmailJsLoaded(cfg.pubKey);
+      if (!ok) return { ok:false, why:'no-emailjs' };
+
+      const dataUrl = `data:application/pdf;base64,${base64}`;
+      const subject = `Invoice ${state.invoice.number || ''} — ${state.invoice.customer || ''} — ${state.invoice.date || ''}`;
+      const params = {
+        to_email: cfg.to,
+        subject,
+        message: `Invoice No: ${state.invoice.number || ''}\nCustomer: ${state.invoice.customer || ''}\nDate: ${state.invoice.date || ''}`,
+        // attachments supported by EmailJS as data URLs
+        attachments: [{ name: fileName, data: dataUrl }]
+      };
+      try {
+        await window.emailjs.send(cfg.serviceId, cfg.templateId, params, cfg.pubKey);
+        return { ok:true };
+      } catch (e) {
+        console.error('EmailJS error', e);
+        return { ok:false, why:'send-failed' };
+      }
+    }
+
+    function validateBeforePdf() {
+      if (!state.items.length) { alert('Please add at least one item'); return false; }
+      if (!state.invoice.number) { alert('Invoice number missing (create/select a draft)'); return false; }
+      if (!state.invoice.date) { alert('Please set Invoice Date'); return false; }
+      return true;
+    }
+
+    // Generate PDF (no status change)
+    document.getElementById('genPDF').addEventListener('click', async () => {
+      syncHeader(); // capture latest inputs
+      if (!validateBeforePdf()) return;
+
+      if (hasHindiText()) {
+        pdfStatus.textContent = 'Note: Hindi text may not render in vector PDF. Use Print for perfect Hindi.';
+      } else {
+        pdfStatus.textContent = '';
+      }
+
+      const doc = buildPdfDocDef();
+      const fname = `Invoice_${(state.invoice.number||'INV')}.pdf`;
+      downloadPdfNow(doc, fname);
+    });
+
+    // Print fallback (best for Hindi)
+    document.getElementById('printPDF').addEventListener('click', () => {
+      syncHeader();
+      if (!state.items.length) { alert('Please add at least one item'); return; }
+      window.print();
+    });
+
+    // Finalize + PDF + Email
+    document.getElementById('finalizeInvoice').addEventListener('click', async () => {
+      syncHeader();
+
+      // If no draft yet, create one to reserve invoice number
+      if (!state.invoice.id) {
+        const makeNew = confirm('No current draft. Create a new draft and finalize?');
+        if (!makeNew) return;
+        newDraft();
+      }
+
+      if (!validateBeforePdf()) return;
+
+      // Mark finalized
+      state.invoice.status = 'Finalized';
+      const entry = getIndexEntry(state.invoice.id);
+      if (entry) { entry.status = 'Finalized'; entry.updatedAt = Date.now(); saveDraftIndex(); }
+      saveCurrentDraftFull();
+      updateCurrentDraftBadges();
+
+      // Build and download PDF
+      if (hasHindiText()) {
+        pdfStatus.textContent = 'Note: Hindi text may not render in vector PDF. Use Print for perfect Hindi.';
+      } else {
+        pdfStatus.textContent = '';
+      }
+      const doc = buildPdfDocDef();
+      const fname = `Invoice_${(state.invoice.number||'INV')}.pdf`;
+
+      // Download and then optionally email
+      try {
+        // Download
+        downloadPdfNow(doc, fname);
+
+        // Email (optional)
+        const cfg = state.emailCfg || {};
+        if (cfg.enabled && cfg.to) {
+          pdfStatus.textContent = 'Preparing email...';
+          const b64 = await getPdfBase64(doc);
+          const sent = await emailSelfWithPdf(b64, fname);
+          if (sent.ok) {
+            pdfStatus.textContent = 'PDF saved. Email sent to your address.';
+          } else {
+            pdfStatus.textContent = 'PDF saved. Email not sent (config or network issue).';
+          }
+        } else {
+          pdfStatus.textContent = 'PDF saved.';
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Error generating or emailing PDF. Try Print / Save as PDF.');
+        pdfStatus.textContent = 'Error during finalize.';
+      }
+    });
+
+    // ===== PWA register (Service Worker) =====
+    (function registerSW(){
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => {
+              console.log('[PWA] SW registered', reg.scope);
+              reg.addEventListener('updatefound', () => {
+                const nw = reg.installing;
+                if (!nw) return;
+                nw.addEventListener('statechange', () => {
+                  if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[PWA] Update installed; will apply on next reload.');
+                  }
+                });
+              });
+            })
+            .catch(err => console.warn('[PWA] SW register failed', err));
+        });
+      } else {
+        console.log('[PWA] ServiceWorker not supported in this browser/context.');
+      }
+    })();
+
+    // ===== Final boot polish =====
+    // Ensure first render (after all parts loaded)
+    try { renderAll(); } catch(_) {}
+
+    // Expose for console debugging if needed
+    window.__sawmillState = state;
+  </script>
+</body>
+</html>
+

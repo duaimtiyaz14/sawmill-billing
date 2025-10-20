@@ -1,0 +1,29 @@
+{
+  "name": "Sawmill Billing",
+  "short_name": "Sawmill",
+  "description": "Timber billing with Hoppus, drafts, charges, PDF & PWA",
+  "start_url": "sawmill_v6.html",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#0c6efd",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Draft",
+      "short_name": "Draft",
+      "url": "sawmill_v6.html#new",
+      "description": "Create a new draft invoice"
+    },
+    {
+      "name": "Drafts",
+      "short_name": "Drafts",
+      "url": "sawmill_v6.html#drafts",
+      "description": "Open draft manager"
+    }
+  ]
+}
