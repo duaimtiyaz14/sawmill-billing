@@ -686,8 +686,11 @@
 
     // ===== Profile Save/Load/Clear (Auto-load at boot) =====
     function loadProfile(auto=false) {
-      const s = localStorage.getItem(PROFILE_KEY);
-      if (!s) { if (!auto) alert('No saved profile'); return false; else return false; }
+  const s = localStorage.getItem(PROFILE_KEY);
+  if (!s) {
+    if (!auto) alert('No saved profile');
+    return false;
+  }
       try {
         const p = JSON.parse(s);
         millName.value = p.name || '';
@@ -1850,5 +1853,6 @@
   </script>
 </body>
 </html>
+
 
 
