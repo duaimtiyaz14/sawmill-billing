@@ -919,6 +919,8 @@
         customerName.value = state.invoice.customer || '';
         syncHeader();
         updateCurrentDraftBadges();
+        fillChargesInputsFromState();
+renderAll();
         return true;
       } catch(e) {
         console.error(e);
@@ -935,6 +937,8 @@
       state.invoice = { id, number: invNo, date: dateStr, customer: '', status:'Draft' };
       state.items = [];
       state.charges = { labour:0, nails:{count:0, rate:0}, custom:[] };
+      fillChargesInputsFromState();
+      renderAll();
 
       invNumber.value = invNo;
       invDate.value = ymdDash(dateStr);
@@ -1275,6 +1279,11 @@
       state.charges.nails.count = Math.max(0, Math.floor(toNum(nailCount.value)));
       state.charges.nails.rate = toNum(nailRate.value);
     }
+    function fillChargesInputsFromState() {
+labourAmount.value = state.charges?.labour ?? 0;
+nailCount.value = state.charges?.nails?.count ?? 0;
+nailRate.value = state.charges?.nails?.rate ?? 0;
+}
     function renderCustomChargesEditor() {
       customChargesBody.innerHTML = '';
       (state.charges.custom || []).forEach((ch, idx) => {
@@ -1313,48 +1322,59 @@
     nailCount.addEventListener('input', () => { syncChargesFromInputs(); saveCurrentDraftFull(); renderAll(); });
     nailRate.addEventListener('input', () => { syncChargesFromInputs(); saveCurrentDraftFull(); renderAll(); });
 
-    function renderCharges(itemsTotalAmount=0) {
-      syncChargesFromInputs();
-      chargesPreviewBody.innerHTML = '';
-      let chargesTotal = 0;
+    function renderCharges(itemsTotalAmount = 0) {
+// Do not mutate state here
+chargesPreviewBody.innerHTML = '';
+let chargesTotal = 0;
 
-      // Labour
-      if (state.charges.labour) {
-        const tr = document.createElement('tr');
-        const tdl = document.createElement('td'); tdl.textContent = 'Labour';
-        const tda = document.createElement('td'); tda.className='right'; tda.textContent = fmtMoney(state.charges.labour);
-        tr.append(tdl, tda); chargesPreviewBody.appendChild(tr);
-        chargesTotal += state.charges.labour;
-      }
-      // Nails
-      const nailAmt = (state.charges.nails.count || 0) * (state.charges.nails.rate || 0);
-      if (nailAmt) {
-        const tr = document.createElement('tr');
-        const tdl = document.createElement('td'); tdl.textContent = `Nails (${state.charges.nails.count} × ₹${fmtMoney(state.charges.nails.rate)})`;
-        const tda = document.createElement('td'); tda.className='right'; tda.textContent = fmtMoney(nailAmt);
-        tr.append(tdl, tda); chargesPreviewBody.appendChild(tr);
-        chargesTotal += nailAmt;
-      }
-      // Custom list
-      (state.charges.custom || []).forEach(ch => {
-        const a = toNum(ch.amount);
-        if (!a) return;
-        const tr = document.createElement('tr');
-        const tdl = document.createElement('td'); tdl.textContent = ch.label || 'Charge';
-        const tda = document.createElement('td'); tda.className='right'; tda.textContent = fmtMoney(a);
-        tr.append(tdl, tda); chargesPreviewBody.appendChild(tr);
-        chargesTotal += a;
-      });
+// Labour
+const labour = toNum(state.charges?.labour);
+if (labour) {
+const tr = document.createElement('tr');
+const tdl = document.createElement('td'); tdl.textContent = 'Labour';
+const tda = document.createElement('td'); tda.className = 'right'; tda.textContent = fmtMoney(labour);
+tr.append(tdl, tda);
+chargesPreviewBody.appendChild(tr);
+chargesTotal += labour;
+}
 
-      chargesTotalCell.textContent = fmtMoney(chargesTotal);
-      const grand = itemsTotalAmount + chargesTotal;
-      grandTotalCell.textContent = fmtMoney(grand);
+// Nails
+const nailsCount = Math.max(0, Math.floor(toNum(state.charges?.nails?.count)));
+const nailsRate = toNum(state.charges?.nails?.rate);
+const nailAmt = nailsCount * nailsRate;
+if (nailAmt) {
+const tr = document.createElement('tr');
+const tdl = document.createElement('td'); tdl.textContent = Nails (${nailsCount} × ₹${fmtMoney(nailsRate)});
+const tda = document.createElement('td'); tda.className = 'right'; tda.textContent = fmtMoney(nailAmt);
+tr.append(tdl, tda);
+chargesPreviewBody.appendChild(tr);
+chargesTotal += nailAmt;
+}
 
-      // Update draft index total for manager list
-      const entry = getIndexEntry(state.invoice.id);
-      if (entry) { entry.total = grand; saveDraftIndex(); }
-    }
+// Custom charges
+(state.charges.custom || []).forEach(ch => {
+const a = toNum(ch.amount);
+if (!a) return;
+const tr = document.createElement('tr');
+const tdl = document.createElement('td'); tdl.textContent = ch.label || 'Charge';
+const tda = document.createElement('td'); tda.className = 'right'; tda.textContent = fmtMoney(a);
+tr.append(tdl, tda);
+chargesPreviewBody.appendChild(tr);
+chargesTotal += a;
+});
 
+// Totals
+chargesTotalCell.textContent = fmtMoney(chargesTotal);
+const grand = (itemsTotalAmount || 0) + chargesTotal;
+grandTotalCell.textContent = fmtMoney(grand);
+
+// Update draft index total
+const entry = getIndexEntry(state.invoice.id);
+if (entry) {
+entry.total = grand;
+saveDraftIndex();
+}
+}
     // ===== Preview (read-only) =====
     function renderPreview() {
       previewBody.innerHTML = '';
@@ -1854,6 +1874,7 @@
   </script>
 </body>
 </html>
+
 
 
 
