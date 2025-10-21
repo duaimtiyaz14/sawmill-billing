@@ -528,6 +528,21 @@
       const b = new Date(`${bYmd.slice(0,4)}-${bYmd.slice(4,6)}-${bYmd.slice(6,8)}T00:00:00`);
       return Math.round((b - a) / 86400000);
     };
+    function normalizeDate(d) {
+if (!d) return todayStr();
+var s = String(d).replace(/\D/g, ''); // sirf digits
+if (s.length === 8) return s; // YYYYMMDD
+try {
+var dt = new Date(d);
+if (!isNaN(dt)) return ymd(dt);
+} catch (e) {}
+return todayStr();
+}
+function ymdDashSafe(val) {
+var s = String(val || '').replace(/\D/g, '');
+if (s.length !== 8) return '';
+return s.slice(0,4) + '-' + s.slice(4,6) + '-' + s.slice(6,8);
+}
 
     // Random ID
     const makeId = () => `d-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
@@ -905,7 +920,14 @@
       try {
         const d = JSON.parse(s);
         state.mill = d.mill || state.mill;
-        state.invoice = d.invoice || state.invoice;
+        const inv = d.invoice || {};
+state.invoice = {
+id: inv.id || null,
+number: inv.number || '',
+date: normalizeDate(inv.date),
+customer: inv.customer || '',
+status: inv.status || 'Draft'
+};
         state.items = Array.isArray(d.items) ? d.items : [];
         state.charges = d.charges || state.charges;
         // species master stays global; do not override user's master unless needed
@@ -915,7 +937,7 @@
         millAddress.value = state.mill.address || '';
         millMobile.value = state.mill.mobile || '';
         invNumber.value = state.invoice.number || '';
-        invDate.value = state.invoice.date ? ymdDash(state.invoice.date) : (invDate.value || '');
+        invDate.value = ymdDashSafe(state.invoice.date) || invDate.value || '';
         customerName.value = state.invoice.customer || '';
         syncHeader();
         updateCurrentDraftBadges();
@@ -1075,57 +1097,67 @@ renderAll();
     newDraftBtn.addEventListener('click', newDraft);
 
     // ===== Boot (minimal; items/charges rendering will come in next parts) =====
-    function initialBoot() {
-      loadProfile(true);
-      loadSpeciesMaster();
-      loadEmailCfg(true);
-      loadDraftIndex();
-      pruneOldDrafts();
+function initialBoot() {
+  loadProfile(true);
+  loadSpeciesMaster();
+  loadEmailCfg(true);
+  loadDraftIndex();
+  pruneOldDrafts();
 
-      // Auto-load last current draft if present
-      const lastId = localStorage.getItem(CURRENT_DRAFT_KEY);
-      if (lastId && getIndexEntry(lastId)) {
-        loadDraftIntoState(lastId);
-      } else {
-        // set default header date
-        if (!invDate.value) invDate.valueAsDate = new Date();
-        syncHeader();
-      }
-      updateCurrentDraftBadges();
+  // Auto-load last current draft if present (guarded)
+  const lastId = localStorage.getItem(CURRENT_DRAFT_KEY);
+  if (lastId && getIndexEntry(lastId)) {
+    const ok = loadDraftIntoState(lastId);
+    if (!ok) {
+      // Load fail => pointer clear so next refresh pe alert na aaye
+      localStorage.removeItem(CURRENT_DRAFT_KEY);
+      // Fallback header/date
+      if (!invDate.value) invDate.valueAsDate = new Date();
+      syncHeader();
     }
-    initialBoot();
+  } else {
+    // set default header date
+    if (!invDate.value) invDate.valueAsDate = new Date();
+    syncHeader();
+  }
 
-    // ===== Items =====
-    // ===== Items (compute, add, render) =====
-    // Extra DOM refs used here (not declared earlier)
-    const toggleEditBtn = document.getElementById('toggleEdit');
-    const invoicePreview = document.getElementById('invoicePreview');
-    const invoiceEditor = document.getElementById('invoiceEditor');
+  updateCurrentDraftBadges();
+}
+initialBoot();
 
-    // Charges editor refs
-    const labourAmount = document.getElementById('labourAmount');
-    const nailCount = document.getElementById('nailCount');
-    const nailRate = document.getElementById('nailRate');
-    const customChargesBody = document.getElementById('customChargesBody');
-    const newChargeLabel = document.getElementById('newChargeLabel');
-    const newChargeAmount = document.getElementById('newChargeAmount');
-    const addChargeBtn = document.getElementById('addCharge');
+// ===== Items =====
+// ===== Items (compute, add, render) =====
+// Extra DOM refs used here (not declared earlier)
+const toggleEditBtn = document.getElementById('toggleEdit');
+const invoicePreview = document.getElementById('invoicePreview');
+const invoiceEditor = document.getElementById('invoiceEditor');
 
-    // Preview refs (totals)
-    const previewBody = document.getElementById('previewBody');
-    const previewItemsCount = document.getElementById('previewItemsCount');
-    const previewTotalFoot = document.getElementById('previewTotalFoot');
-    const previewTotalAmount = document.getElementById('previewTotalAmount');
-    const chargesPreviewBody = document.getElementById('chargesPreviewBody');
-    const chargesTotalCell = document.getElementById('chargesTotalCell');
-    const grandTotalCell = document.getElementById('grandTotalCell');
+// Charges editor refs
+const labourAmount = document.getElementById('labourAmount');
+const nailCount = document.getElementById('nailCount');
+const nailRate = document.getElementById('nailRate');
+const customChargesBody = document.getElementById('customChargesBody');
+const newChargeLabel = document.getElementById('newChargeLabel');
+const newChargeAmount = document.getElementById('newChargeAmount');
+const addChargeBtn = document.getElementById('addCharge');
 
-    // Editor refs
-    const editorBody = document.getElementById('editorBody');
-    const editorItemsCount = document.getElementById('editorItemsCount');
-    const editorTotalFoot = document.getElementById('editorTotalFoot');
-    const editorTotalAmount = document.getElementById('editorTotalAmount');
+// Hydrate charges inputs once refs exist (safe)
+fillChargesInputsFromState();
 
+// Preview refs (totals)
+const previewBody = document.getElementById('previewBody');
+const previewItemsCount = document.getElementById('previewItemsCount');
+const previewTotalFoot = document.getElementById('previewTotalFoot');
+const previewTotalAmount = document.getElementById('previewTotalAmount');
+const chargesPreviewBody = document.getElementById('chargesPreviewBody');
+const chargesTotalCell = document.getElementById('chargesTotalCell');
+const grandTotalCell = document.getElementById('grandTotalCell');
+
+// Editor refs
+const editorBody = document.getElementById('editorBody');
+const editorItemsCount = document.getElementById('editorItemsCount');
+const editorTotalFoot = document.getElementById('editorTotalFoot');
+const editorTotalAmount = document.getElementById('editorTotalAmount');
     function makeSizeText(it) {
       if (it.type === 'round') {
         const L = it._calc?.L || feetFromFIP(it.lenFt||0, it.lenIn||0, it.lenPin||0);
@@ -1875,6 +1907,7 @@ saveDraftIndex();
   </script>
 </body>
 </html>
+
 
 
 
