@@ -55,7 +55,7 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(async () => {
           const cache = await caches.open(STATIC_CACHE);
-          return cache.match('./sawmill_v6.html') || Response.error();
+          return cache.match('./index.html') || Response.error();
         })
     );
     return;
@@ -101,3 +101,4 @@ self.addEventListener('fetch', (event) => {
   );
 
 });
+
