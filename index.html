@@ -1280,9 +1280,9 @@ renderAll();
       state.charges.nails.rate = toNum(nailRate.value);
     }
     function fillChargesInputsFromState() {
-labourAmount.value = state.charges?.labour ?? 0;
-nailCount.value = state.charges?.nails?.count ?? 0;
-nailRate.value = state.charges?.nails?.rate ?? 0;
+labourAmount.value = (state.charges && state.charges.labour) != null ? state.charges.labour : 0;
+nailCount.value = (state.charges && state.charges.nails && state.charges.nails.count) != null ? state.charges.nails.count : 0;
+nailRate.value = (state.charges && state.charges.nails && state.charges.nails.rate) != null ? state.charges.nails.rate : 0;
 }
     function renderCustomChargesEditor() {
       customChargesBody.innerHTML = '';
@@ -1874,6 +1874,7 @@ saveDraftIndex();
   </script>
 </body>
 </html>
+
 
 
 
