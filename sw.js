@@ -1,5 +1,5 @@
 /* Simple service worker for offline + Add to Home Screen */
-const CACHE_VERSION = 'v6-2';
+const CACHE_VERSION = 'v6-3';
 const STATIC_CACHE = `sawmill-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sawmill-runtime-${CACHE_VERSION}`;
 
@@ -101,4 +101,5 @@ self.addEventListener('fetch', (event) => {
   );
 
 });
+
 
