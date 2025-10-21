@@ -16,15 +16,16 @@
     {
       "name": "New Draft",
       "short_name": "Draft",
-      "url": "sawmill_v6.html#new",
+      "url": "index.html#new",
       "description": "Create a new draft invoice"
     },
     {
       "name": "Drafts",
       "short_name": "Drafts",
-      "url": "sawmill_v6.html#drafts",
+      "url": "index.html#drafts",
       "description": "Open draft manager"
     }
   ]
 
 }
+
