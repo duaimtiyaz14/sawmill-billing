@@ -915,41 +915,62 @@ return s.slice(0,4) + '-' + s.slice(4,6) + '-' + s.slice(6,8);
       updateCurrentDraftBadges();
     }
     function loadDraftIntoState(id) {
-      const s = localStorage.getItem(getDraftKey(id));
-      if (!s) { alert('Draft not found'); return false; }
-      try {
-        const d = JSON.parse(s);
-        state.mill = d.mill || state.mill;
-        const inv = d.invoice || {};
-state.invoice = {
-id: inv.id || null,
-number: inv.number || '',
-date: normalizeDate(inv.date),
-customer: inv.customer || '',
-status: inv.status || 'Draft'
-};
-        state.items = Array.isArray(d.items) ? d.items : [];
-        state.charges = d.charges || state.charges;
-        // species master stays global; do not override user's master unless needed
+const s = localStorage.getItem(getDraftKey(id));
+if (!s) { alert('Draft not found'); return false; }
+try {
+const d = JSON.parse(s);
+  // Mill
+state.mill = d.mill || state.mill;
 
-        // Fill header inputs
-        millName.value = state.mill.name || '';
-        millAddress.value = state.mill.address || '';
-        millMobile.value = state.mill.mobile || '';
-        invNumber.value = state.invoice.number || '';
-        invDate.value = ymdDashSafe(state.invoice.date) || invDate.value || '';
-        customerName.value = state.invoice.customer || '';
-        syncHeader();
-        updateCurrentDraftBadges();
-        fillChargesInputsFromState();
-renderAll();
-        return true;
-      } catch(e) {
-        console.error(e);
-        alert('Error loading draft');
-        return false;
-      }
-    }
+// Invoice (normalize date)
+const inv = d.invoice || {};
+state.invoice = {
+  id: inv.id || null,
+  number: inv.number || '',
+  date: normalizeDate(inv.date),
+  customer: inv.customer || '',
+  status: inv.status || 'Draft'
+};
+
+// Items
+state.items = Array.isArray(d.items) ? d.items : [];
+
+// Charges (normalize to safe shape)
+let c = d.charges && typeof d.charges === 'object' ? d.charges : {};
+if (!c.nails || typeof c.nails !== 'object') c.nails = { count: 0, rate: 0 };
+if (!Array.isArray(c.custom)) c.custom = [];
+c.labour = toNum(c.labour);
+c.nails.count = Math.max(0, Math.floor(toNum(c.nails.count)));
+c.nails.rate = toNum(c.nails.rate);
+state.charges = {
+  labour: c.labour || 0,
+  nails: { count: c.nails.count || 0, rate: c.nails.rate || 0 },
+  custom: c.custom || []
+};
+
+// Fill header inputs
+millName.value = state.mill.name || '';
+millAddress.value = state.mill.address || '';
+millMobile.value = state.mill.mobile || '';
+invNumber.value = state.invoice.number || '';
+invDate.value = ymdDashSafe(state.invoice.date) || invDate.value || '';
+customerName.value = state.invoice.customer || '';
+
+// Sync header + badges
+syncHeader();
+updateCurrentDraftBadges();
+
+// Hydrate charges inputs (safe)
+fillChargesInputsFromState();
+
+// Do NOT call renderAll() here (refs for preview/editor may not be ready on boot)
+return true;
+  } catch (e) {
+console.error('loadDraftIntoState error', e);
+alert('Error loading draft');
+return false;
+}
+}
     function newDraft() {
       const id = makeId();
       // date for invoice: use selected date or today
@@ -1312,9 +1333,17 @@ const editorTotalAmount = document.getElementById('editorTotalAmount');
       state.charges.nails.rate = toNum(nailRate.value);
     }
     function fillChargesInputsFromState() {
-labourAmount.value = (state.charges && state.charges.labour) != null ? state.charges.labour : 0;
-nailCount.value = (state.charges && state.charges.nails && state.charges.nails.count) != null ? state.charges.nails.count : 0;
-nailRate.value = (state.charges && state.charges.nails && state.charges.nails.rate) != null ? state.charges.nails.rate : 0;
+// Safe DOM lookups (no TDZ)
+const labourEl = document.getElementById('labourAmount');
+const nailCountEl = document.getElementById('nailCount');
+const nailRateEl = document.getElementById('nailRate');
+if (!labourEl || !nailCountEl || !nailRateEl) return;
+
+const c = state.charges || {};
+const nails = c.nails || {};
+labourEl.value = (c.labour != null ? c.labour : 0);
+nailCountEl.value = (nails.count != null ? nails.count : 0);
+nailRateEl.value = (nails.rate != null ? nails.rate : 0);
 }
     function renderCustomChargesEditor() {
       customChargesBody.innerHTML = '';
@@ -1907,6 +1936,7 @@ saveDraftIndex();
   </script>
 </body>
 </html>
+
 
 
 
