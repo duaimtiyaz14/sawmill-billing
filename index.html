@@ -1328,7 +1328,7 @@ chargesPreviewBody.innerHTML = '';
 let chargesTotal = 0;
 
 // Labour
-const labour = toNum(state.charges?.labour);
+const labour = toNum(state.charges && state.charges.labour);
 if (labour) {
 const tr = document.createElement('tr');
 const tdl = document.createElement('td'); tdl.textContent = 'Labour';
@@ -1339,12 +1339,13 @@ chargesTotal += labour;
 }
 
 // Nails
-const nailsCount = Math.max(0, Math.floor(toNum(state.charges?.nails?.count)));
-const nailsRate = toNum(state.charges?.nails?.rate);
+const nailsCount = Math.max(0, Math.floor(toNum(state.charges && state.charges.nails && state.charges.nails.count)));
+const nailsRate = toNum(state.charges && state.charges.nails && state.charges.nails.rate);
 const nailAmt = nailsCount * nailsRate;
 if (nailAmt) {
 const tr = document.createElement('tr');
-const tdl = document.createElement('td'); tdl.textContent = Nails (${nailsCount} × ₹${fmtMoney(nailsRate)});
+const tdl = document.createElement('td');
+tdl.textContent = 'Nails (' + nailsCount + ' × ₹' + fmtMoney(nailsRate) + ')';
 const tda = document.createElement('td'); tda.className = 'right'; tda.textContent = fmtMoney(nailAmt);
 tr.append(tdl, tda);
 chargesPreviewBody.appendChild(tr);
@@ -1874,6 +1875,7 @@ saveDraftIndex();
   </script>
 </body>
 </html>
+
 
 
 
