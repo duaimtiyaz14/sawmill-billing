@@ -1,5 +1,5 @@
 /* Simple service worker for offline + Add to Home Screen */
-const CACHE_VERSION = 'v6-7';
+const CACHE_VERSION = 'v6-8';
 const STATIC_CACHE = `sawmill-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `sawmill-runtime-${CACHE_VERSION}`;
 
@@ -11,6 +11,9 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-512-maskable.png'
+  // Add fonts
+  './fonts/NotoSansDevanagari-Regular.ttf',
+  './fonts/NotoSansDevanagari-Bold.ttf'
 ];
 
 // Try to pre-cache app shell
@@ -101,6 +104,7 @@ self.addEventListener('fetch', (event) => {
   );
 
 });
+
 
 
 
