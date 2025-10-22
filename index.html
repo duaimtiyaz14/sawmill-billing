@@ -1889,7 +1889,7 @@ pdfStatus.textContent = '';
 }
 
 const doc = buildPdfDocDef();
-const fname = Invoice_${(state.invoice.number||'INV')}.pdf;
+  const fname = `Invoice_${state.invoice.number || 'INV'}.pdf`;
 downloadPdfNow(doc, fname);
 });
 
@@ -1929,7 +1929,7 @@ pdfStatus.textContent = '';
 }
 
 const doc = buildPdfDocDef();
-const fname = Invoice_${(state.invoice.number||'INV')}.pdf;
+const fname = `Invoice_${state.invoice.number || 'INV'}.pdf`;
 
 // Download and then optionally email
 try {
@@ -1987,6 +1987,7 @@ pdfStatus.textContent = 'Error during finalize.';
   </script>
 </body>
 </html>
+
 
 
 
