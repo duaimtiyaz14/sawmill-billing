@@ -1761,6 +1761,21 @@ async function ensureDevaFonts() {
       }
       return false;
     }
+    // Put this near the PDF section (above genPDF handler), e.g., above buildPdfDocDef or right below it
+function safeFilePart(s) {
+  return (s || '')
+    .trim()
+    .replace(/\s+/g, '_')               // spaces -> _
+    .replace(/[\/\\:*?"<>|]+/g, '')     // remove illegal filename chars
+    .replace(/_+/g, '_')                // collapse multiple _
+    .slice(0, 80);                      // keep it reasonable length
+}
+
+function makePdfFilename() {
+  const inv = safeFilePart(state.invoice.number || 'INV');
+  const cust = safeFilePart(state.invoice.customer || 'Customer');
+  return `${cust}_${inv}.pdf`;
+}
 
     function buildPdfDocDef() {
       const { body, itemsTotalAmount } = (() => {
@@ -1889,7 +1904,7 @@ pdfStatus.textContent = '';
 }
 
 const doc = buildPdfDocDef();
-  const fname = `Invoice_${state.invoice.number || 'INV'}.pdf`;
+const fname = makePdfFilename();
 downloadPdfNow(doc, fname);
 });
 
@@ -1929,7 +1944,7 @@ pdfStatus.textContent = '';
 }
 
 const doc = buildPdfDocDef();
-const fname = `Invoice_${state.invoice.number || 'INV'}.pdf`;
+const fname = makePdfFilename();  // Customer_InvoiceNo.pdf
 
 // Download and then optionally email
 try {
@@ -1988,6 +2003,7 @@ pdfStatus.textContent = 'Error during finalize.';
   </script>
 </body>
 </html>
+
 
 
 
