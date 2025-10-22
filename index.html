@@ -1084,7 +1084,12 @@ return false;
           const tdTotal = document.createElement('td'); tdTotal.className='right'; tdTotal.textContent = e.total ? fmtMoney(e.total) : '0.00';
           const tdAct = document.createElement('td'); tdAct.className='right';
           const openBtn = document.createElement('button'); openBtn.className='btn small'; openBtn.textContent='Open';
-          openBtn.addEventListener('click', () => { if(loadDraftIntoState(e.id)) { draftModal.classList.remove('show'); } });
+          openBtn.addEventListener('click', () => {
+if (loadDraftIntoState(e.id)) {
+draftModal.classList.remove('show');
+renderAll(); // force UI refresh to new draft
+}
+});
           const dupBtn = document.createElement('button'); dupBtn.className='btn gray small'; dupBtn.textContent='Duplicate';
           dupBtn.style.marginLeft='6px'; dupBtn.addEventListener('click', () => duplicateDraftById(e.id));
           const pinBtn = document.createElement('button'); pinBtn.className='btn gray small'; pinBtn.textContent = e.pinned ? 'Unpin' : 'Pin';
@@ -1936,6 +1941,7 @@ saveDraftIndex();
   </script>
 </body>
 </html>
+
 
 
 
