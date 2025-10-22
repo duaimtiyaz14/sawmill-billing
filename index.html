@@ -1620,6 +1620,51 @@ saveDraftIndex();
       renderCustomChargesEditor();
     }
 
+    // ===== Hindi font (Devanagari) loader for pdfmake =====
+let __devaFontsReady = false;
+
+async function fetchBase64(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Fetch failed ' + url);
+  const blob = await res.blob();
+  return await new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result; // data:...;base64,XXXX
+      resolve(String(dataUrl).split(',')[1]); // base64 only (no prefix)
+    };
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function ensureDevaFonts() {
+  if (__devaFontsReady) return true;
+  if (!window.pdfMake) return false;
+  try {
+    if (!pdfMake.vfs) pdfMake.vfs = {};
+    const [reg, bold] = await Promise.all([
+      fetchBase64('fonts/NotoSansDevanagari-Regular.ttf'),
+      fetchBase64('fonts/NotoSansDevanagari-Bold.ttf')
+    ]);
+    pdfMake.vfs['NotoSansDevanagari-Regular.ttf'] = reg;
+    pdfMake.vfs['NotoSansDevanagari-Bold.ttf'] = bold;
+
+    pdfMake.fonts = Object.assign({}, pdfMake.fonts, {
+      NotoDeva: {
+        normal: 'NotoSansDevanagari-Regular.ttf',
+        bold: 'NotoSansDevanagari-Bold.ttf',
+        italics: 'NotoSansDevanagari-Regular.ttf',
+        bolditalics: 'NotoSansDevanagari-Bold.ttf'
+      }
+    });
+    __devaFontsReady = true;
+    return true;
+  } catch (e) {
+    console.error('Devanagari font load failed', e);
+    return false;
+  }
+}
+
     // ===== PDF (pdfmake) + Generate/Print/Finalize + Email-to-self =====
 
     // Build Items table for PDF
@@ -1757,7 +1802,7 @@ saveDraftIndex();
           sub: { fontSize: 10, color:'#444' },
           note: { fontSize: 9, color:'#666' }
         },
-        defaultStyle: { fontSize: 9 },
+        defaultStyle: { fontSize: 9, font: 'NotoDeva' },
         footer: function(currentPage, pageCount) {
           return { text: `Page ${currentPage} of ${pageCount}`, alignment: 'right', margin:[0,0,16,8], fontSize:8, color:'#666' };
         }
@@ -1832,19 +1877,21 @@ saveDraftIndex();
 
     // Generate PDF (no status change)
     document.getElementById('genPDF').addEventListener('click', async () => {
-      syncHeader(); // capture latest inputs
-      if (!validateBeforePdf()) return;
+syncHeader(); // capture latest inputs
+if (!validateBeforePdf()) return;
 
-      if (hasHindiText()) {
-        pdfStatus.textContent = 'Note: Hindi text may not render in vector PDF. Use Print for perfect Hindi.';
-      } else {
-        pdfStatus.textContent = '';
-      }
+// Make sure Hindi-capable font is loaded into pdfmake
+const okFonts = await ensureDevaFonts();
+if (!okFonts) {
+pdfStatus.textContent = 'Hindi font not loaded. If characters look wrong, use Print.';
+} else {
+pdfStatus.textContent = '';
+}
 
-      const doc = buildPdfDocDef();
-      const fname = `Invoice_${(state.invoice.number||'INV')}.pdf`;
-      downloadPdfNow(doc, fname);
-    });
+const doc = buildPdfDocDef();
+const fname = Invoice_${(state.invoice.number||'INV')}.pdf;
+downloadPdfNow(doc, fname);
+});
 
     // Print fallback (best for Hindi)
     document.getElementById('printPDF').addEventListener('click', () => {
@@ -1855,59 +1902,58 @@ saveDraftIndex();
 
     // Finalize + PDF + Email
     document.getElementById('finalizeInvoice').addEventListener('click', async () => {
-      syncHeader();
+syncHeader();
 
-      // If no draft yet, create one to reserve invoice number
-      if (!state.invoice.id) {
-        const makeNew = confirm('No current draft. Create a new draft and finalize?');
-        if (!makeNew) return;
-        newDraft();
-      }
+// If no draft yet, create one to reserve invoice number
+if (!state.invoice.id) {
+const makeNew = confirm('No current draft. Create a new draft and finalize?');
+if (!makeNew) return;
+newDraft();
+}
 
-      if (!validateBeforePdf()) return;
+if (!validateBeforePdf()) return;
 
-      // Mark finalized
-      state.invoice.status = 'Finalized';
-      const entry = getIndexEntry(state.invoice.id);
-      if (entry) { entry.status = 'Finalized'; entry.updatedAt = Date.now(); saveDraftIndex(); }
-      saveCurrentDraftFull();
-      updateCurrentDraftBadges();
+// Mark finalized
+state.invoice.status = 'Finalized';
+const entry = getIndexEntry(state.invoice.id);
+if (entry) { entry.status = 'Finalized'; entry.updatedAt = Date.now(); saveDraftIndex(); }
+saveCurrentDraftFull();
+updateCurrentDraftBadges();
 
-      // Build and download PDF
-      if (hasHindiText()) {
-        pdfStatus.textContent = 'Note: Hindi text may not render in vector PDF. Use Print for perfect Hindi.';
-      } else {
-        pdfStatus.textContent = '';
-      }
-      const doc = buildPdfDocDef();
-      const fname = `Invoice_${(state.invoice.number||'INV')}.pdf`;
+// Make sure Hindi-capable font is loaded into pdfmake
+const okFonts = await ensureDevaFonts();
+if (!okFonts) {
+pdfStatus.textContent = 'Hindi font not loaded. If characters look wrong, use Print.';
+} else {
+pdfStatus.textContent = '';
+}
 
-      // Download and then optionally email
-      try {
-        // Download
-        downloadPdfNow(doc, fname);
+const doc = buildPdfDocDef();
+const fname = Invoice_${(state.invoice.number||'INV')}.pdf;
 
-        // Email (optional)
-        const cfg = state.emailCfg || {};
-        if (cfg.enabled && cfg.to) {
-          pdfStatus.textContent = 'Preparing email...';
-          const b64 = await getPdfBase64(doc);
-          const sent = await emailSelfWithPdf(b64, fname);
-          if (sent.ok) {
-            pdfStatus.textContent = 'PDF saved. Email sent to your address.';
-          } else {
-            pdfStatus.textContent = 'PDF saved. Email not sent (config or network issue).';
-          }
-        } else {
-          pdfStatus.textContent = 'PDF saved.';
-        }
-      } catch (e) {
-        console.error(e);
-        alert('Error generating or emailing PDF. Try Print / Save as PDF.');
-        pdfStatus.textContent = 'Error during finalize.';
-      }
-    });
-
+// Download and then optionally email
+try {
+// Download
+downloadPdfNow(doc, fname);
+  // Email (optional)
+const cfg = state.emailCfg || {};
+if (cfg.enabled && cfg.to) {
+  pdfStatus.textContent = 'Preparing email...';
+  const b64 = await getPdfBase64(doc);
+  const sent = await emailSelfWithPdf(b64, fname);
+  if (sent.ok) {
+    pdfStatus.textContent = 'PDF saved. Email sent to your address.';
+  } else {
+    pdfStatus.textContent = 'PDF saved. Email not sent (config or network issue).';
+  }
+} else {
+  pdfStatus.textContent = 'PDF saved.';
+}
+  } catch (e) {
+console.error(e);
+alert('Error generating or emailing PDF. Try Print / Save as PDF.');
+pdfStatus.textContent = 'Error during finalize.';
+}
     // ===== PWA register (Service Worker) =====
     (function registerSW(){
       if ('serviceWorker' in navigator) {
@@ -1941,6 +1987,7 @@ saveDraftIndex();
   </script>
 </body>
 </html>
+
 
 
 
