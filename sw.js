@@ -10,7 +10,7 @@ const APP_SHELL = [
   // Icons (create these files under /icons/)
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon-512-maskable.png'
+  './icons/icon-512-maskable.png',
   // Add fonts
   './fonts/NotoSansDevanagari-Regular.ttf',
   './fonts/NotoSansDevanagari-Bold.ttf'
@@ -104,6 +104,7 @@ self.addEventListener('fetch', (event) => {
   );
 
 });
+
 
 
 
